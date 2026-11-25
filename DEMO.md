@@ -12,7 +12,7 @@ Demo start route: `/` (`app/page.tsx`)
 
 ## Steps
 
-1. `/`, `app/page.tsx`: the poster headline fills the screen. Click the CTA "Pack my tubes" in the header.
+1. `/`, `app/page.tsx`: the poster headline fills the screen and thins as you scroll. Click the CTA "Pack my tubes" in the header or under the headline (same label, same link).
 2. `/pack?scene=marmara-dusk`, `app/pack/page.tsx`: the sunset loads and the 12 student-set tubes are ticked.
 3. `/pack?scene=marmara-dusk&k=5`, `app/pack/page.tsx` (rendered by `components/pack-workspace.tsx`): the bag fills with 5 tubes and every color group gets a recipe and a mix swatch.
 4. Same screen, `components/pack-workspace.tsx`: slide to 3. The stickers change, the red spreads and the average error jumps. Click the planner's "Add <tube>" suggestion and the error drops back. **This is the wow step.**
