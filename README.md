@@ -1,8 +1,37 @@
 # Tubora
 
-Drop in a reference photo and tick the paints you own. Tubora picks the best few tubes to carry for that picture, gives a mixing recipe for every color in it, and lights up in red the parts those tubes will never reach.
+Tubora picks the few paint tubes to carry for one reference picture, gives a mixing recipe for every color in it, and lights up in red the parts those tubes will never reach. A painter who owns twelve tubes but has room for four finds out at home, not on the pier after the sky has gone to mud.
 
-> Live demo: https://tubora.vercel.app
+> Live: https://tubora.vercel.app, click **Pack my tubes** (DEMO step 1).
+
+The live site runs the real planner on the seed scenes. The engine badge under the error readout names the mixer in its own words: "Live engine: spectral.js reflectance mixing, computed in your browser." when the deploy sets `ADAPTER_MODE=real`, and "Estimate engine: three-channel Kubelka-Munk. Spectral mixing is off in this build." otherwise. The phrase box serves "seed sample, awaiting Adaption run" rows until the Adaption run lands.
+
+## Try it in 60 seconds
+
+1. Open https://tubora.vercel.app and click **Pack my tubes** in the header or under the headline.
+2. `/pack?scene=marmara-dusk` opens with the Marmara sunset loaded and the 12 student-set tubes ticked.
+3. Slide the tube count to 5: the bag fills, and every color group gets a recipe and a mix swatch.
+4. Slide down to 3: the stickers change, the red spreads across the sunset and the average error jumps. Click the planner's "Add <tube>" button and the error comes back down.
+
+## Addresses
+
+| What | Where |
+| --- | --- |
+| Live app | https://tubora.vercel.app |
+
+## How the code fits
+
+```mermaid
+flowchart LR
+  home["app/page.tsx"] --> adapter["lib/adapter.ts"]
+  pack["app/pack/*"] --> adapter
+  adapter --> planner["lib/planner.ts"]
+  planner --> color["lib/color.ts"]
+  planner --> spectral["lib/mix/spectral.ts"]
+  search["components/phrase-search.tsx"] --> phrases["lib/phrases.ts"]
+  phrases --> fixture["fixtures/phrases.sample.json"]
+  invent["scripts/adaption_invent.py"] --> fixture
+```
 
 ## The problem
 
@@ -40,7 +69,7 @@ Ultramarine Blue and Cadmium Yellow Light, 1:1. Hue is the OKLab hue angle (gree
 | Engine | Mix | Hue | Mixes in table | Table build (ms) |
 | --- | --- | --- | --- | --- |
 | km-rgb | rgb(47, 54, 7) | 118° | 6216 | 50 |
-| spectral | rgb(119, 146, 61) | 124° | 6216 | 167 |
+| spectral | rgb(119, 146, 61) | 124° | 6216 | 159 |
 
 spectral.js answered every spectral mix in this run.
 <!-- PROOF:END mix-engine -->
@@ -67,11 +96,11 @@ The DEMO.md steps on the spectral engine, Marmara dusk, 12-tube student set. Ste
 
 | Step | File | Engine | Result | ms |
 | --- | --- | --- | --- | --- |
-| 2 | `components/pack-workspace.tsx` | spectral | 24 color groups, 6216 mixes | 337 |
-| 3 | `components/pack-workspace.tsx` | spectral | 5 tubes, average error 4.0, 24.3% out of reach | 54 |
-| 4 | `components/pack-workspace.tsx` | spectral | k=3: average error 9.3, 87.6% out of reach, suggests Quinacridone Rose, error drops to 5.2 | 65 |
-| 5 | `components/phrase-search.tsx` | keyword | "karın üstünde akşam gölgesi" (score 1.00), mix Cad Yellow 1 : Quin Rose 2 : Ultramarine 3 | 5 |
-| 6 | `app/pack/[palette]/page.tsx` | spectral | 4 tubes, 24 recipes, average error 5.2 | 402 |
+| 2 | `components/pack-workspace.tsx` | spectral | 24 color groups, 6216 mixes | 315 |
+| 3 | `components/pack-workspace.tsx` | spectral | 5 tubes, average error 4.0, 24.3% out of reach | 48 |
+| 4 | `components/pack-workspace.tsx` | spectral | k=3: average error 9.3, 87.6% out of reach, suggests Quinacridone Rose, error drops to 5.2 | 42 |
+| 5 | `components/phrase-search.tsx` | keyword | "karın üstünde akşam gölgesi" (score 1.00), mix Cad Yellow 1 : Quin Rose 2 : Ultramarine 3 | 3 |
+| 6 | `app/pack/[palette]/page.tsx` | spectral | 4 tubes, 24 recipes, average error 5.2 | 334 |
 
 Out of reach by tube count (spectral): k=2 98.2%, k=3 87.6%, k=4 43.8%, k=5 24.3%, k=6 13.9%, k=7 13.2%.
 <!-- PROOF:END demo-path -->
@@ -104,15 +133,15 @@ Not run in this build: no Adaption rows in fixtures/phrases.sample.json, the cor
 
 ## Tech stack
 
-- Next.js 15 (App Router), TypeScript strict, Tailwind CSS v4, shadcn-style primitives
+- Next.js 15 (App Router), React 19, TypeScript strict, Tailwind CSS v4, shadcn-style primitives
 - Color science written from scratch in `lib/color.ts`: OKLab, CIE Lab, CIEDE2000, per-channel Kubelka-Munk
 - spectral.js 3 for reflectance mixing when `ADAPTER_MODE=real`
-- zod at the API edge (`lib/schemas.ts`)
+- zod 3 at the API edge (`lib/schemas.ts`)
 - Planner in `lib/planner.ts`: k-means, mix table, greedy selection, per-pixel error, shareable plan ids
 - HTML Canvas for the heatmap
-- `@huggingface/transformers` for multilingual sentence embeddings in the browser
+- Transformers.js for multilingual sentence embeddings, loaded from jsDelivr in the browser at runtime (not an npm dependency)
 - Adaption Python SDK (build-time script) for the phrase dataset
-- A dependency-free tube-rack scroll indicator with native smooth scrolling
+- Lenis 1 for smooth scrolling and Motion 14 for the scroll-linked tube-rack bar, poster parallax and step chapters (all off under reduced motion)
 - Deployed on Vercel
 
 ## Quickstart
@@ -161,6 +190,12 @@ There is no database and nothing to migrate: every step reads seeded or computed
 
 ## AI use
 
-<!-- Adjust this section to each hackathon's disclosure rules. -->
+The InnovArt 2027 event pages publish no AI-use policy, so this section lists every place AI touches the project.
 
-We used AI coding assistants for scaffolding and boilerplate. Architecture, product decisions, and final code review are our own.
+- In the product, in the browser: `Xenova/paraphrase-multilingual-MiniLM-L12-v2` through Transformers.js embeds the phrase box query; no key and no server call.
+- At build time: Adaption Invent generates the painter phrase set from the prompt file `prompts/adaption-invent.md`, run by `scripts/adaption_invent.py`, which writes `fixtures/phrases.sample.json` and `fixtures/adaption-evaluation.sample.json`. Today both fixtures hold seed data (see the `adaption` proof block above).
+- In development: we used AI coding assistants to write and review code. Architecture and product decisions are our own.
+
+## License
+
+Code: MIT, see `LICENSE`. The painter phrase dataset card (`datasets/tubora-painter-phrases/README.md`) declares CC BY 4.0 for the generated phrases.
