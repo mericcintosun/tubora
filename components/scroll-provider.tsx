@@ -1,19 +1,25 @@
 "use client";
 
-import { useEffect, useRef } from "react";
 import Link from "next/link";
+import { ReactLenis, useLenis } from "lenis/react";
+import { motion, useReducedMotion, useScroll } from "motion/react";
 import { TUBES } from "@/lib/data";
 import { rgbCss } from "@/lib/color";
 import { cn } from "@/lib/utils";
 
 /**
- * Kit K3, signature 1: a scroll progress bar drawn as the tube rack itself: all 16 catalog
- * pigments, squeezed out left to right as the page scrolls. Dependency-free: native scroll
- * plus a small rAF spring for the bar; motion is skipped under prefers-reduced-motion.
+ * Kit K3, signature 1. Lenis smooths the page scroll (never under prefers-reduced-motion),
+ * and the progress bar is the tube rack itself: all 16 catalog pigments, squeezed out left
+ * to right, bound to Motion's useScroll().scrollYProgress.
+ *
+ * Lenis is mounted as a childless sibling root so turning it on after hydration never
+ * remounts the page; useLenis() reads the root instance from anywhere.
  */
 export function ScrollProvider({ children }: { children: React.ReactNode }) {
+  const reduce = useReducedMotion();
   return (
     <>
+      {reduce === false && <ReactLenis root options={{ lerp: 0.12 }} />}
       <TubeRackProgress />
       {children}
     </>
@@ -25,69 +31,25 @@ function prefersReducedMotion() {
 }
 
 function TubeRackProgress() {
-  const barRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    let current = 0;
-    let target = 0;
-    let frame = 0;
-
-    const read = () => {
-      const max = document.documentElement.scrollHeight - window.innerHeight;
-      target = max > 0 ? Math.min(1, Math.max(0, window.scrollY / max)) : 0;
-    };
-    const paint = () => {
-      if (barRef.current) barRef.current.style.transform = `scaleX(${current})`;
-    };
-    const tick = () => {
-      current += (target - current) * 0.2;
-      if (Math.abs(target - current) < 0.001) {
-        current = target;
-        frame = 0;
-      } else {
-        frame = requestAnimationFrame(tick);
-      }
-      paint();
-    };
-    const onScroll = () => {
-      read();
-      if (prefersReducedMotion()) {
-        current = target;
-        paint();
-      } else if (!frame) {
-        frame = requestAnimationFrame(tick);
-      }
-    };
-
-    read();
-    current = target;
-    paint();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll);
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
-      if (frame) cancelAnimationFrame(frame);
-    };
-  }, []);
-
+  const { scrollYProgress } = useScroll();
   return (
     <div
       className="pointer-events-none fixed inset-x-0 bottom-0 z-50 h-2 border-t-2 border-border bg-background"
-      role="progressbar"
-      aria-label="Page scroll progress"
+      role="presentation"
+      aria-hidden="true"
     >
-      <div ref={barRef} className="flex h-full origin-left" style={{ transform: "scaleX(0)" }}>
+      <motion.div className="flex h-full origin-left" style={{ scaleX: scrollYProgress }}>
         {TUBES.map((t) => (
-          <span key={t.id} className="h-full flex-1" style={{ backgroundColor: rgbCss(t.rgb) }} title={t.name} />
+          <span key={t.id} className="h-full flex-1" style={{ backgroundColor: rgbCss(t.rgb) }} />
         ))}
-      </div>
+      </motion.div>
     </div>
   );
 }
 
-/** In-page anchor that scrolls smoothly (instantly under reduced motion), offset for the sticky header. */
+/** In-page anchor: Lenis scrollTo when Lenis is mounted, a native scroll otherwise, offset for the sticky header. */
 export function AnchorLink({ href, className, children }: { href: `#${string}`; className?: string; children: React.ReactNode }) {
+  const lenis = useLenis();
   return (
     <Link
       href={href}
@@ -96,8 +58,13 @@ export function AnchorLink({ href, className, children }: { href: `#${string}`; 
         const el = document.querySelector(href);
         if (!el) return;
         e.preventDefault();
-        const top = el.getBoundingClientRect().top + window.scrollY - 80;
-        window.scrollTo({ top, behavior: prefersReducedMotion() ? "auto" : "smooth" });
+        if (lenis) {
+          lenis.scrollTo(href, { offset: -80 });
+        } else {
+          const top = el.getBoundingClientRect().top + window.scrollY - 80;
+          const behavior: ScrollBehavior = prefersReducedMotion() ? "auto" : "smooth";
+          window.scrollTo({ top, behavior });
+        }
         history.replaceState(null, "", href);
       }}
     >
