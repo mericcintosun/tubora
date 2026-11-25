@@ -52,7 +52,9 @@ npm run dev
 # open http://localhost:3000
 ```
 
-No environment variables are needed to run the app. To regenerate the phrase set with Adaption:
+No environment variables are needed to run the app: `ADAPTER_MODE` defaults to `fake`, which serves the seed scenes, saved plans and phrase rows. The six-step demo script lives in `DEMO.md`.
+
+To regenerate the phrase set with Adaption:
 
 ```bash
 pip install adaption
