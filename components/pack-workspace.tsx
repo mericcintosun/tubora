@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ImagePlus, Lightbulb, Flame } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { HeatmapCanvas } from "@/components/heatmap-canvas";
@@ -56,6 +57,7 @@ export function PackWorkspace({
   const suggested = plan.suggestion ? TUBES[plan.suggestion.tube] : null;
   const unreachablePct = Math.round(plan.unreachableShare * 100);
   const sceneTitle = upload ? upload.name : scene.title;
+  const noTubes = owned.length === 0;
 
   const toggleTube = (id: string) =>
     setOwned((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]));
@@ -154,11 +156,13 @@ export function PackWorkspace({
           </div>
           <Slider
             id={`k-${variant}`}
-            className="mt-3"
             min={2}
             max={7}
             step={1}
             value={k}
+            disabled={noTubes}
+            aria-disabled={noTubes}
+            className={cn("mt-3", noTubes && "cursor-not-allowed opacity-60")}
             onChange={(e) => setK(Number(e.target.value))}
           />
           <div className="mt-4 flex flex-wrap gap-2">
@@ -174,15 +178,14 @@ export function PackWorkspace({
                 {TUBES[t].name}
               </span>
             ))}
-            {plan.selected.length === 0 && (
-              <p className="text-sm font-bold">Tick at least one tube you own and Tubora will start picking.</p>
-            )}
           </div>
-          <p className="mt-4 max-w-[65ch] text-sm leading-relaxed">
-            Average color error is <strong>{plan.avgError.toFixed(1)}</strong> (CIEDE2000; under 2 looks identical, over{" "}
-            {UNREACHABLE} looks like a different color). <strong>{unreachablePct}%</strong> of this picture is out of reach
-            with these {plan.selected.length} tubes.
-          </p>
+          {!noTubes && (
+            <p className="mt-4 max-w-[65ch] text-sm leading-relaxed">
+              Average color error is <strong>{plan.avgError.toFixed(1)}</strong> (CIEDE2000; under 2 looks identical, over{" "}
+              {UNREACHABLE} looks like a different color). <strong>{unreachablePct}%</strong> of this picture is out of reach
+              with these {plan.selected.length} tubes.
+            </p>
+          )}
           {suggested && plan.suggestion && (
             <Button
               variant="secondary"
@@ -204,6 +207,11 @@ export function PackWorkspace({
           )}
         </div>
 
+        {noTubes ? (
+          <Card role="status" className="p-5">
+            <p className="font-display text-lg font-semibold">Tick at least one tube you own and Tubora will pack the bag.</p>
+          </Card>
+        ) : (
         <div className={cn("grid gap-2", frame ? "sm:grid-cols-2 lg:grid-cols-4" : "")}>
           {plan.recipes.slice(0, frame ? 8 : 10).map((r, i) => (
             <div key={i} className="flex items-center gap-3 rounded-2xl border-2 border-border bg-background px-3 py-2">
@@ -219,6 +227,7 @@ export function PackWorkspace({
             </div>
           ))}
         </div>
+        )}
 
         {!frame && (
           <>

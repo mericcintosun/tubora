@@ -1,38 +1,48 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { cache } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { PlanPicture } from "@/components/heatmap-canvas";
 import { ShareLink } from "@/components/share-link";
+import { getAdapter } from "@/lib/adapter";
 import { rgbCss } from "@/lib/color";
-import { TUBES, sceneById } from "@/lib/data";
-import { UNREACHABLE, analyze, planPalette, recipeText, renderScene, resolvePlanId } from "@/lib/planner";
+import { UNREACHABLE } from "@/lib/planner";
+import { SEED } from "@/lib/seed";
 
 type Params = Promise<{ palette: string }>;
 
+/** One planner run per request, shared by generateMetadata and the page. */
+const loadPlan = cache((palette: string) => {
+  const adapter = getAdapter();
+  const plan = adapter.getPlan(palette);
+  const scene = plan ? adapter.listScenes().find((s) => s.id === plan.sceneId) ?? null : null;
+  return plan && scene ? { plan, scene } : null;
+});
+
+const tubeOf = (id: string) => SEED.tubes.find((t) => t.id === id);
+
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { palette } = await params;
-  const spec = resolvePlanId(palette);
-  const scene = spec ? sceneById(spec.sceneId) : null;
-  if (!spec || !scene) return { title: "Palette not found" };
+  const found = loadPlan(palette);
+  if (!found) return { title: "Palette not found" };
+  const { plan, scene } = found;
   return {
-    title: `${spec.k} tubes for ${scene.title}`,
-    description: `A ${spec.k}-tube palette plan for "${scene.title}", with mixing recipes and an unreachable-color heatmap.`,
+    title: `${plan.k} tubes for ${scene.title}`,
+    description: `A ${plan.k}-tube palette plan for "${scene.title}", with mixing recipes and an unreachable-color heatmap.`,
   };
 }
 
 export default async function PalettePage({ params }: { params: Params }) {
   const { palette } = await params;
-  const spec = resolvePlanId(palette);
-  const scene = spec ? sceneById(spec.sceneId) : null;
-  if (!spec || !scene) notFound();
+  const found = loadPlan(palette);
+  if (!found) notFound();
+  const { plan, scene } = found;
 
-  const analysis = analyze(renderScene(scene));
-  const plan = planPalette(analysis, spec.owned, spec.k);
   const pct = Math.round(plan.unreachableShare * 100);
-  const suggested = plan.suggestion ? TUBES[plan.suggestion.tube] : null;
-  const saved = spec.saved;
+  const suggested = plan.suggestion ? tubeOf(plan.suggestion.tubeId) : null;
+  const saved = plan.saved;
 
   return (
     <article className="mx-auto max-w-6xl px-4 py-10">
@@ -57,9 +67,9 @@ export default async function PalettePage({ params }: { params: Params }) {
       <div className="mt-10 grid gap-8 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
         <div className="tubora-enter-late">
           <PlanPicture
-            sceneId={scene.id}
-            owned={spec.owned}
-            k={spec.k}
+            sceneId={plan.sceneId}
+            owned={plan.owned}
+            k={plan.k}
             label={`${scene.title} with the out-of-reach ${pct}% washed in red`}
           />
         </div>
@@ -67,44 +77,58 @@ export default async function PalettePage({ params }: { params: Params }) {
           <section aria-labelledby="bag-title">
             <h2 id="bag-title" className="font-display text-2xl font-semibold">In the bag</h2>
             <ol className="mt-3 flex flex-wrap gap-2">
-              {plan.selected.map((t, i) => (
-                <li
-                  key={TUBES[t].id}
-                  className={`inline-flex items-center gap-2 rounded-full border-2 border-border bg-card py-1 pl-1 pr-3 font-bold shadow-[0_3px_0_var(--border)] ${i % 2 ? "rotate-1" : "-rotate-1"}`}
-                >
-                  <span className="size-7 rounded-full border-2 border-border" style={{ backgroundColor: rgbCss(TUBES[t].rgb) }} />
-                  {TUBES[t].name}
-                  <span className="text-xs font-semibold">{TUBES[t].code}</span>
-                </li>
-              ))}
+              {plan.selected.map((id, i) => {
+                const tube = tubeOf(id);
+                if (!tube) return null;
+                return (
+                  <li
+                    key={tube.id}
+                    className={`inline-flex items-center gap-2 rounded-full border-2 border-border bg-card py-1 pl-1 pr-3 font-bold shadow-[0_3px_0_var(--border)] ${i % 2 ? "rotate-1" : "-rotate-1"}`}
+                  >
+                    <span className="size-7 rounded-full border-2 border-border" style={{ backgroundColor: rgbCss(tube.rgb) }} />
+                    {tube.name}
+                    <span className="text-xs font-semibold">{tube.code}</span>
+                  </li>
+                );
+              })}
             </ol>
             {suggested && plan.suggestion && (
               <p className="mt-4 rounded-2xl border-2 border-border bg-background p-4 text-sm">
                 <strong>Missing piece:</strong> adding {suggested.name} would bring the average error down to{" "}
-                {plan.suggestion.avgError.toFixed(1)}.
+                {plan.suggestion.avgErrorAfter.toFixed(1)}.
               </p>
             )}
           </section>
           <section aria-labelledby="recipes-title">
             <h2 id="recipes-title" className="font-display text-2xl font-semibold">Recipes, biggest areas first</h2>
-            <ul className="mt-3 space-y-2">
-              {plan.recipes.slice(0, 10).map((r, i) => (
-                <li key={i} className="flex items-center gap-3 rounded-2xl border-2 border-border bg-background px-3 py-2">
-                  <span className="flex shrink-0 -space-x-2">
-                    <span className="size-8 rounded-full border-2 border-border" style={{ backgroundColor: rgbCss(r.cluster.rgb) }} />
-                    <span className="size-8 rounded-full border-2 border-border" style={{ backgroundColor: rgbCss(r.mix.rgb) }} />
-                  </span>
-                  <span className="flex-1 text-sm">
-                    <span className="block font-bold">{recipeText(r.mix)}</span>
-                    <span className="text-xs">{Math.round(r.cluster.weight * 100)}% of the picture</span>
-                  </span>
-                  <Badge variant={r.error > UNREACHABLE ? "destructive" : r.error > 3 ? "secondary" : "ok"}>{r.error.toFixed(1)}</Badge>
-                </li>
-              ))}
-            </ul>
+            {plan.recipes.length === 0 ? (
+              <p className="mt-3 rounded-2xl border-2 border-border bg-card p-4 text-sm font-bold">
+                No recipes for this plan yet. Open it in the workspace and tick a few tubes.
+              </p>
+            ) : (
+              <div className="overflow-x-auto">
+                <ul className="mt-3 space-y-2">
+                  {plan.recipes.slice(0, 10).map((r, i) => (
+                    <li key={i} className="flex items-center gap-3 rounded-2xl border-2 border-border bg-background px-3 py-2">
+                      <span className="flex shrink-0 -space-x-2">
+                        <span className="size-8 rounded-full border-2 border-border" style={{ backgroundColor: rgbCss(r.clusterRgb) }} />
+                        <span className="size-8 rounded-full border-2 border-border" style={{ backgroundColor: rgbCss(r.mixRgb) }} />
+                      </span>
+                      <span className="min-w-0 flex-1 text-sm">
+                        <span className="block font-bold">{r.recipe}</span>
+                        <span className="text-xs">{Math.round(r.weight * 100)}% of the picture</span>
+                      </span>
+                      <Badge variant={r.error > UNREACHABLE ? "destructive" : r.error > 3 ? "secondary" : "ok"}>
+                        {r.error.toFixed(1)}
+                      </Badge>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </section>
           <Button asChild size="lg">
-            <Link href={`/pack?scene=${scene.id}&k=${spec.k}`}>Try a different tube count</Link>
+            <Link href={`/pack?scene=${scene.id}&k=${plan.k}`}>Try a different tube count</Link>
           </Button>
         </div>
       </div>

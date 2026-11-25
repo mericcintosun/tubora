@@ -1,9 +1,16 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { PackWorkspace } from "@/components/pack-workspace";
 import { SceneSlot } from "@/components/scene-slot";
 import { AnchorLink } from "@/components/scroll-provider";
-import { DEFAULT_SCENE_ID, STUDENT_SET, TUBES } from "@/lib/data";
+import { SEED } from "@/lib/seed";
+
+export const metadata: Metadata = {
+  title: "Pack your tubes for the coast",
+};
+
+const { defaultSceneId: DEFAULT_SCENE_ID, studentSet: STUDENT_SET, tubes: TUBES } = SEED;
 
 const STEPS = [
   {
