@@ -382,5 +382,7 @@ Root cause: `pixelErrors` in `lib/planner.ts` compared every raw pixel with its 
 
 Fix: each pixel now takes its group's error against the best mix (`a.deltas`), so the red share, the heatmap and the recipe badges all measure the same thing. The result page sentence now leads with what the tubes do reach and gives the scene's hard part as a planning note. `/how` and README step 4 describe the new rule. The proof blocks in README.md, DEMO.md and SUBMISSION.md regenerate on the next `npm run proof`. The 43.8% / 87.6% figures in the Phase 3 open question above come from the old metric.
 
+Re-check of the same crawl (screenshots `qa-4.png`, `qa-5.png`): the live pages still show the old sentence ("44% of the picture is out of reach with this palette"), which no longer exists anywhere in the repo. So the crawl ran on a deploy built before `63608ec`; the fix needs a redeploy, not more code. With the group-based metric the proof gives 42.9% at 4 tubes and 88.6% at 3 tubes. Those are real results: the recipe badges show the dark sea and sky groups above 6, and the red spread when you drop to 3 tubes is the demo's point. The page leads with what the tubes reach and names the missing tube, so the share stays honest and no number is hidden.
+
 ### QA: external findings
 None this round.

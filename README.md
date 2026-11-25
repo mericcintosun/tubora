@@ -68,8 +68,8 @@ Ultramarine Blue and Cadmium Yellow Light, 1:1. Hue is the OKLab hue angle (gree
 
 | Engine | Mix | Hue | Mixes in table | Table build (ms) |
 | --- | --- | --- | --- | --- |
-| km-rgb | rgb(47, 54, 7) | 118° | 6216 | 55 |
-| spectral | rgb(119, 146, 61) | 124° | 6216 | 183 |
+| km-rgb | rgb(47, 54, 7) | 118° | 6216 | 48 |
+| spectral | rgb(119, 146, 61) | 124° | 6216 | 157 |
 
 spectral.js answered every spectral mix in this run.
 <!-- PROOF:END mix-engine -->
@@ -96,11 +96,11 @@ The DEMO.md steps on the spectral engine, Marmara dusk, 12-tube student set. Ste
 
 | Step | File | Engine | Result | ms |
 | --- | --- | --- | --- | --- |
-| 2 | `components/pack-workspace.tsx` | spectral | 24 color groups, 6216 mixes | 303 |
-| 3 | `components/pack-workspace.tsx` | spectral | 5 tubes, average error 4.0, 24.1% out of reach | 30 |
+| 2 | `components/pack-workspace.tsx` | spectral | 24 color groups, 6216 mixes | 316 |
+| 3 | `components/pack-workspace.tsx` | spectral | 5 tubes, average error 4.0, 24.1% out of reach | 29 |
 | 4 | `components/pack-workspace.tsx` | spectral | k=3: average error 9.3, 88.6% out of reach, suggests Quinacridone Rose, error drops to 5.2 | 22 |
-| 5 | `components/phrase-search.tsx` | keyword | "karın üstünde akşam gölgesi" (score 1.00), mix Cad Yellow 1 : Quin Rose 2 : Ultramarine 3 | 3 |
-| 6 | `app/pack/[palette]/page.tsx` | spectral | 4 tubes, 24 recipes, average error 5.2 | 318 |
+| 5 | `components/phrase-search.tsx` | keyword | "karın üstünde akşam gölgesi" (score 1.00), mix Cad Yellow 1 : Quin Rose 2 : Ultramarine 3 | 4 |
+| 6 | `app/pack/[palette]/page.tsx` | spectral | 4 tubes, 24 recipes, average error 5.2 | 315 |
 
 Out of reach by tube count (spectral): k=2 100.0%, k=3 88.6%, k=4 42.9%, k=5 24.1%, k=6 10.6%, k=7 10.6%.
 <!-- PROOF:END demo-path -->
