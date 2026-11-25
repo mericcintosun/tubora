@@ -5,6 +5,7 @@ import { Flame } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { sceneById } from "@/lib/data";
 import { UNREACHABLE, analyze, planErrors, planPalette, renderScene, type Pixels } from "@/lib/planner";
+import type { MixEngine } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 function tokenRgb(name: string): [number, number, number] {
@@ -78,15 +79,28 @@ export function HeatmapCanvas({
 }
 
 /** A saved plan's picture: re-renders the scene in the browser and draws its heatmap. */
-export function PlanPicture({ sceneId, owned, k, label }: { sceneId: string; owned: string[]; k: number; label: string }) {
+export function PlanPicture({
+  sceneId,
+  owned,
+  k,
+  label,
+  mixEngine,
+}: {
+  sceneId: string;
+  owned: string[];
+  k: number;
+  label: string;
+  /** Chosen on the server by getAdapter(); arrives here as a plain string. */
+  mixEngine: MixEngine;
+}) {
   const [showHeat, setShowHeat] = useState(true);
   const scene = sceneById(sceneId);
   const pixels = useMemo(() => (scene ? renderScene(scene) : null), [scene]);
   const errors = useMemo(() => {
     if (!pixels) return null;
-    const a = analyze(pixels);
+    const a = analyze(pixels, undefined, mixEngine);
     return planErrors(a, planPalette(a, owned, k));
-  }, [pixels, owned, k]);
+  }, [pixels, owned, k, mixEngine]);
   if (!pixels) return null;
   return (
     <div className="space-y-3">

@@ -31,7 +31,7 @@ export default async function PackPage({ searchParams }: { searchParams: Promise
         </p>
       </div>
 
-      <PackWorkspace initialSceneId={sceneId} initialK={k} initialOwned={SEED.studentSet} />
+      <PackWorkspace initialSceneId={sceneId} initialK={k} initialOwned={SEED.studentSet} mixEngine={adapter.mixEngine} />
 
       <section className="mt-16" aria-labelledby="saved-title">
         <h2 id="saved-title" className="font-display text-2xl font-semibold">Palettes other painters packed</h2>

@@ -8,6 +8,7 @@ import { PlanPicture } from "@/components/heatmap-canvas";
 import { ShareLink } from "@/components/share-link";
 import { getAdapter } from "@/lib/adapter";
 import { rgbCss } from "@/lib/color";
+import { ENGINE_LINE } from "@/lib/mix/engines";
 import { UNREACHABLE } from "@/lib/planner";
 import { SEED } from "@/lib/seed";
 
@@ -40,6 +41,7 @@ export default async function PalettePage({ params }: { params: Params }) {
   if (!found) notFound();
   const { plan, scene } = found;
 
+  const mixEngine = getAdapter().mixEngine;
   const pct = Math.round(plan.unreachableShare * 100);
   const suggested = plan.suggestion ? tubeOf(plan.suggestion.tubeId) : null;
   const saved = plan.saved;
@@ -58,6 +60,11 @@ export default async function PalettePage({ params }: { params: Params }) {
             ? `Every part of this picture is within reach. Average error ${plan.avgError.toFixed(1)}.`
             : `${pct}% of the picture is out of reach with this palette (average error ${plan.avgError.toFixed(1)}). ${scene.challenge}`}
         </p>
+        <p className="mt-3">
+          <Badge variant={mixEngine === "spectral" ? "ok" : "secondary"} className="whitespace-normal text-left">
+            {ENGINE_LINE[mixEngine]}
+          </Badge>
+        </p>
         {saved && <p className="mt-2 max-w-[65ch] italic">“{saved.note}”</p>}
         <div className="mt-6">
           <ShareLink path={`/pack/${palette}`} />
@@ -70,6 +77,7 @@ export default async function PalettePage({ params }: { params: Params }) {
             sceneId={plan.sceneId}
             owned={plan.owned}
             k={plan.k}
+            mixEngine={mixEngine}
             label={`${scene.title} with the out-of-reach ${pct}% washed in red`}
           />
         </div>

@@ -6,8 +6,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { rgbCss } from "@/lib/color";
+import { MODEL_LOAD_RETRIES, MODEL_LOAD_TIMEOUT_MS } from "@/lib/config";
 import { PHRASES, keywordSearch, type PainterPhrase } from "@/lib/phrases";
 import { bestMixFor, recipeText } from "@/lib/planner";
+import type { MixEngine } from "@/lib/types";
 
 const MODEL = "Xenova/paraphrase-multilingual-MiniLM-L12-v2";
 // Typed as string (not a literal) so TypeScript treats the dynamic import as `any`.
@@ -22,18 +24,48 @@ type Extractor = (
 let extractorPromise: Promise<Extractor> | null = null;
 let phraseVectors: Float32Array[] | null = null;
 
+/** Rejects after `ms` so a stalled CDN or model download cannot hold the search box forever. */
+function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error("model load timed out")), ms);
+    p.then(
+      (v) => {
+        clearTimeout(timer);
+        resolve(v);
+      },
+      (e) => {
+        clearTimeout(timer);
+        reject(e);
+      }
+    );
+  });
+}
+
+async function loadOnce(onProgress: (pct: number) => void): Promise<Extractor> {
+  // Loaded from the CDN at runtime so the bundle does not depend on the npm package.
+  // If it cannot load, run() falls back to keyword search.
+  const mod = await import(/* webpackIgnore: true */ TRANSFORMERS_URL);
+  const make = mod.pipeline as unknown as (task: string, model: string, opts: object) => Promise<Extractor>;
+  return make("feature-extraction", MODEL, {
+    progress_callback: (p: { status?: string; progress?: number }) => {
+      if (p.status === "progress" && typeof p.progress === "number") onProgress(p.progress);
+    },
+  });
+}
+
 async function loadExtractor(onProgress: (pct: number) => void): Promise<Extractor> {
   if (!extractorPromise) {
     extractorPromise = (async () => {
-      // Loaded from the CDN at runtime so the bundle does not depend on the npm package.
-      // If it cannot load, run() falls back to keyword search.
-      const mod = await import(/* webpackIgnore: true */ TRANSFORMERS_URL);
-      const make = mod.pipeline as unknown as (task: string, model: string, opts: object) => Promise<Extractor>;
-      return make("feature-extraction", MODEL, {
-        progress_callback: (p: { status?: string; progress?: number }) => {
-          if (p.status === "progress" && typeof p.progress === "number") onProgress(p.progress);
-        },
-      });
+      // One try plus MODEL_LOAD_RETRIES retries, each bounded by MODEL_LOAD_TIMEOUT_MS.
+      let lastErr: unknown = null;
+      for (let attempt = 0; attempt <= MODEL_LOAD_RETRIES; attempt++) {
+        try {
+          return await withTimeout(loadOnce(onProgress), MODEL_LOAD_TIMEOUT_MS);
+        } catch (err) {
+          lastErr = err;
+        }
+      }
+      throw lastErr instanceof Error ? lastErr : new Error("model load failed");
     })();
     extractorPromise.catch(() => {
       extractorPromise = null;
@@ -55,7 +87,7 @@ interface Hit {
 }
 
 /** "Describe a color" box: multilingual sentence embeddings in the browser, keyword fallback. */
-export function PhraseSearch({ tubeIdx }: { tubeIdx: number[] }) {
+export function PhraseSearch({ tubeIdx, mixEngine = "km-rgb" }: { tubeIdx: number[]; mixEngine?: MixEngine }) {
   const [query, setQuery] = useState("karın üstünde akşam gölgesi");
   const [status, setStatus] = useState<"idle" | "loading" | "ready" | "fallback">("idle");
   const [progress, setProgress] = useState(0);
@@ -101,7 +133,7 @@ export function PhraseSearch({ tubeIdx }: { tubeIdx: number[] }) {
     }
   }
 
-  const recipe = hit && tubeIdx.length > 0 ? bestMixFor(hit.phrase.rgb, tubeIdx) : null;
+  const recipe = hit && tubeIdx.length > 0 ? bestMixFor(hit.phrase.rgb, tubeIdx, mixEngine) : null;
 
   return (
     <section className="rounded-2xl border-2 border-border bg-card p-5 shadow-sticker" aria-labelledby="phrase-title">

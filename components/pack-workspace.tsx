@@ -25,6 +25,8 @@ import {
   renderScene,
   type Pixels,
 } from "@/lib/planner";
+import { ENGINE_LINE } from "@/lib/mix/engines";
+import type { MixEngine } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 type Variant = "full" | "frame";
@@ -33,11 +35,14 @@ export function PackWorkspace({
   initialSceneId,
   initialK,
   initialOwned,
+  mixEngine,
   variant = "full",
 }: {
   initialSceneId: string;
   initialK: number;
   initialOwned: string[];
+  /** Chosen on the server by getAdapter(); arrives here as a plain string. */
+  mixEngine: MixEngine;
   variant?: Variant;
 }) {
   const [sceneId, setSceneId] = useState(initialSceneId);
@@ -51,7 +56,7 @@ export function PackWorkspace({
 
   const scene = sceneById(sceneId) ?? SCENES[0];
   const pixels = useMemo(() => upload?.pixels ?? renderScene(scene), [upload, scene]);
-  const analysis = useMemo(() => analyze(pixels), [pixels]);
+  const analysis = useMemo(() => analyze(pixels, undefined, mixEngine), [pixels, mixEngine]);
   const plan = useMemo(() => planPalette(analysis, owned, k), [analysis, owned, k]);
   const errors = useMemo(() => planErrors(analysis, plan), [analysis, plan]);
   const suggested = plan.suggestion ? TUBES[plan.suggestion.tube] : null;
@@ -186,6 +191,11 @@ export function PackWorkspace({
               with these {plan.selected.length} tubes.
             </p>
           )}
+          <p className="mt-3">
+            <Badge variant={mixEngine === "spectral" ? "ok" : "secondary"} className="whitespace-normal text-left">
+              {ENGINE_LINE[mixEngine]}
+            </Badge>
+          </p>
           {suggested && plan.suggestion && (
             <Button
               variant="secondary"
@@ -253,7 +263,7 @@ export function PackWorkspace({
                 })}
               </div>
             </fieldset>
-            <PhraseSearch tubeIdx={plan.selected} />
+            <PhraseSearch tubeIdx={plan.selected} mixEngine={mixEngine} />
           </>
         )}
       </div>

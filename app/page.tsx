@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { PackWorkspace } from "@/components/pack-workspace";
 import { SceneSlot } from "@/components/scene-slot";
 import { AnchorLink } from "@/components/scroll-provider";
+import { getAdapter } from "@/lib/adapter";
 import { SEED } from "@/lib/seed";
 
 export const metadata: Metadata = {
@@ -67,7 +68,13 @@ export default function Home() {
             the suggestion and it comes back.
           </p>
           <div className="mt-8">
-            <PackWorkspace variant="frame" initialSceneId={DEFAULT_SCENE_ID} initialK={4} initialOwned={STUDENT_SET} />
+            <PackWorkspace
+              variant="frame"
+              initialSceneId={DEFAULT_SCENE_ID}
+              initialK={4}
+              initialOwned={STUDENT_SET}
+              mixEngine={getAdapter().mixEngine}
+            />
           </div>
         </div>
       </section>
