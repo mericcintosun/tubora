@@ -49,7 +49,7 @@ Navigation: header has "A shared palette" (`/pack/marmara-dusk-four-tubes`), "Ho
 - `components/heatmap-canvas.tsx`: canvas renderer + `PlanPicture` for result pages.
 - `components/phrase-search.tsx`: Transformers.js embeddings (`Xenova/paraphrase-multilingual-MiniLM-L12-v2`) loaded by dynamic import, determinate download progress, keyword fallback, labels which engine answered.
 - `components/share-link.tsx`: copy-link button.
-- `components/scroll-provider.tsx`: Lenis root, tube-rack scroll progress bar, `AnchorLink`.
+- `components/scroll-provider.tsx`: tube-rack scroll progress bar, native smooth `AnchorLink`.
 - `components/site-header.tsx`: sticky solid header with the one brand mark.
 - `components/ui/`: button, card, badge, input, slider in the D16 candy treatment (2px ink outlines, `0 4px 0` ink sticker shadow, pill controls, rotated badges).
 - `scripts/adaption_invent.py`: Adaption Invent dataset build, keyed and keyless paths in `build_phrase_set`.
@@ -64,8 +64,8 @@ Navigation: header has "A shared palette" (`/pack/marmara-dusk-four-tubes`), "Ho
 
 ### Interaction kit (K3 scroll)
 
-- Shipped: signature 1. `<ReactLenis root>` mounted by `ScrollProvider` (skipped under reduced motion) plus a progress bar bound to `useScroll().scrollYProgress`, drawn as the 16 catalog pigments. `AnchorLink` uses `lenis.scrollTo` for `#live-frame`.
-- To build: signature 2, parallax depth. On `/` move the scene-2 illustration and its problem copy at different rates with `useTransform`.
+- Shipped: signature 1, dependency-free. `ScrollProvider` draws a progress bar as the 16 catalog pigments, eased by a small rAF spring that snaps instantly under reduced motion. `AnchorLink` uses native `window.scrollTo({ behavior: "smooth" })` with an 80px header offset for `#live-frame`. Lenis and motion were dropped because they were never installed or locked. To bring them back, run `npm install lenis motion` and restore the version from git history.
+- To build: signature 2, parallax depth. On `/` move the scene-2 illustration and its problem copy at different rates (needs `motion` or a hand-rolled scroll transform).
 - To build: signature 3, a sticky chapter section where vertical scroll drives horizontal movement through the steps (cluster, mix, pick, heatmap), ideally showing the Marmara plan at each stage from real `planPalette` output.
 
 ### One-mark proof (`components/site-header.tsx`)
@@ -106,6 +106,45 @@ Navigation: header has "A shared palette" (`/pack/marmara-dusk-four-tubes`), "Ho
 - Copy rules: no em or en dashes, no double hyphens as dashes. No "seamless", "leverage", "empower", "robust", "unlock", "elevate", "harness", "cutting-edge", "delve" and friends. Write like a painter talking to a painter.
 - Scope: if something threatens 2 Jan, cut it (palette card first, then kit signature 3). Never cut the wow moment or the three submission requirements.
 - Run `npm run build` after every change; it must stay green.
+
+## Phase 1 handover: contracts, adapter seam and API stubs
+
+Live URL:
+
+### Goal
+Wrap the working planner in five permanent seams (DEMO.md contract, `ADAPTER_MODE` adapter, typed `/api` stubs, one tokens source, error/loading/empty surfaces) without changing any planner math.
+
+### Status
+- Slice 1, contracts (`DEMO.md`, `CLAUDE.md`, README paragraph): done.
+- Slice 2, typed core, fixtures, seed: done.
+- Slice 3, adapter seam: done.
+- Slice 4, API stubs and pages through the adapter: done. `app/how/page.tsx` still imports `TUBES` from `@/lib/data` and `PHRASES` from `@/lib/phrases` (outside `app/pack/`, so within the gate, but not yet through the adapter).
+- Slice 5, active nav, error and loading surfaces, shared tokens: done.
+- Build: not run by the agent. The runner checks `npm run build`.
+
+### Decisions
+- `lib/seed.ts` instead of `lib/data/seed.ts`: a `lib/data/` folder would sit beside `lib/data.ts` and make `@/lib/data` ambiguous. `SEED` also carries `tubes` so `app/pack/` never imports `@/lib/data`.
+- The client planner is the engine, not a data source. `components/pack-workspace.tsx` and `PlanPicture` still run `analyze` / `planPalette` in the browser for the live slider and heatmap. Server pages and `/api` read through `getAdapter()`.
+- `PlanSummary` fields: `id`, `sceneId`, `k`, `owned`, `selected` (tube ids), `recipes` (`clusterRgb`, `mixRgb`, `recipe`, `error`, `weight`), `avgError`, `unreachableShare`, `suggestion` (`tubeId`, `avgErrorAfter`) or null, `saved` (`painter`, `city`, `savedAt`, `note`) or null. Non-finite numbers are written as 0 so the JSON stays valid. Scene title and challenge come from `listScenes()`.
+- `/pack/[palette]` wraps the adapter call in React `cache`, so `generateMetadata` and the page share one planner run.
+- `ADAPTER_MODE=real` returns the fake adapter with `mode: "real"` until Phase 2.
+- `fixtures/phrases.sample.json` and `fixtures/phrases.json` are written in the exact `JSON.stringify(rows, null, 2) + "\n"` layout, so `npm run seed` should be a byte-for-byte no-op (unverified until a human runs it twice).
+
+### Failed attempts
+None.
+
+### Files changed
+`DEMO.md`, `CLAUDE.md`, `README.md`, `HANDOFF.md`, `IDENTITY.md` (Amendments only), `package.json`, `.env.example`, `lib/types.ts`, `lib/seed.ts`, `lib/adapter.ts`, `lib/tokens.ts`, `lib/phrases.ts`, `fixtures/phrases.sample.json`, `fixtures/phrases.json`, `fixtures/adaption-evaluation.sample.json`, `prompts/adaption-invent.md`, `scripts/seed.mjs`, `app/api/scenes/route.ts`, `app/api/plans/route.ts`, `app/api/plans/[palette]/route.ts`, `app/api/phrases/route.ts`, `app/page.tsx`, `app/layout.tsx`, `app/error.tsx`, `app/not-found.tsx`, `app/opengraph-image.tsx`, `app/pack/page.tsx`, `app/pack/loading.tsx`, `app/pack/[palette]/page.tsx`, `app/pack/[palette]/loading.tsx`, `components/ui/nav-link.tsx`, `components/site-header.tsx`, `components/pack-workspace.tsx`, `.farm-commits.json`.
+
+### Commands run
+None, the agent cannot run commands.
+
+### Open questions (for Discord)
+- Eligibility conflict: the Devpost box says "students only, 13+", the overview says all ages. Which one holds?
+- Adaption AI Application Award: does it need an opt-in, or does it have its own criteria?
+
+### Next best step
+Phase 2: spectral.js mixing plus a Web Worker behind `ADAPTER_MODE=real`, and the Adaption Invent rows into `fixtures/phrases.json` (through `fixtures/phrases.sample.json` and `npm run seed`), with `fixtures/adaption-evaluation.sample.json` holding the real score.
 
 ## 5. Definition of done
 

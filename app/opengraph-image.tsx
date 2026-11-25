@@ -1,16 +1,11 @@
 import { ImageResponse } from "next/og";
+import { ACCENT, GROUND, INK, ON_ACCENT, SECOND, SURFACE } from "@/lib/tokens";
 
 export const alt = "Tubora: pick the tubes, see what you can't paint";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-// ImageResponse cannot read CSS variables, so the IDENTITY.md palette is spelled out here.
-const GROUND = "#fde8e4";
-const SURFACE = "#fbd5cf";
-const INK = "#2a1a1f";
-const ACCENT = "#d93a25";
-const SECOND = "#e2a400";
-const ON_ACCENT = "#ffffff";
+// ImageResponse cannot read CSS variables, so the IDENTITY.md palette comes from lib/tokens.ts.
 
 export default function OpengraphImage() {
   const tubes = [ACCENT, SECOND, ON_ACCENT, INK];

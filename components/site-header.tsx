@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { BrandMark } from "@/components/brand-mark";
 import { Button } from "@/components/ui/button";
+import { NavLink } from "@/components/ui/nav-link";
 
 const LINKS = [
   { href: "/pack/marmara-dusk-four-tubes", label: "A shared palette" },
@@ -17,13 +18,9 @@ export function SiteHeader() {
         </Link>
         <nav className="flex items-center gap-1 sm:gap-3" aria-label="Main">
           {LINKS.map((l) => (
-            <Link
-              key={l.href}
-              href={l.href}
-              className="hidden rounded-full px-3 py-1.5 text-sm font-bold underline-offset-4 hover:bg-muted hover:underline sm:inline-block"
-            >
+            <NavLink key={l.href} href={l.href} className="hidden text-sm sm:inline-block">
               {l.label}
-            </Link>
+            </NavLink>
           ))}
           <Button asChild size="sm">
             <Link href="/pack?scene=marmara-dusk">Pack my tubes</Link>

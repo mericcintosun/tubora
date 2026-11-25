@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { Fredoka, Nunito } from "next/font/google";
-import Link from "next/link";
 import { ScrollProvider } from "@/components/scroll-provider";
 import { SiteHeader } from "@/components/site-header";
+import { NavLink } from "@/components/ui/nav-link";
 import "./globals.css";
 
 const fredoka = Fredoka({ subsets: ["latin"], display: "swap", variable: "--font-fredoka" });
@@ -10,7 +10,7 @@ const nunito = Nunito({ subsets: ["latin", "latin-ext"], display: "swap", variab
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://tubora.vercel.app"),
-  title: { default: "Tubora: pick the tubes, see what you can't paint", template: "%s · Tubora" },
+  title: { default: "Tubora: pick the tubes, see what you can't paint", template: "%s | Tubora" },
   description:
     "Drop in a reference photo and tick the paints you own. Tubora picks the best few tubes to carry for that picture, gives a mixing recipe for every color, and lights up the parts those tubes can never reach.",
 };
@@ -28,9 +28,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 Tubora estimates mixes from sRGB tube swatches. Real paint drifts: test a small swatch before you commit a
                 whole sky.
               </p>
-              <nav className="flex gap-4 font-bold" aria-label="Footer">
-                <Link href="/pack" className="underline-offset-4 hover:underline">Workspace</Link>
-                <Link href="/how" className="underline-offset-4 hover:underline">Method</Link>
+              <nav className="flex flex-wrap gap-2" aria-label="Footer">
+                <NavLink href="/">Home</NavLink>
+                <NavLink href="/pack?scene=marmara-dusk">Workspace</NavLink>
+                <NavLink href="/how">Method</NavLink>
               </nav>
             </div>
           </footer>

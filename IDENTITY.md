@@ -84,3 +84,5 @@ Rules:
 - every interaction is driven by the real seed data; a decorative animation with no product meaning does not count as a signature
 
 ## Amendments (append-only; later phases add dated lines here, never edit anything above)
+
+- 2026-11-25: Phase 1: tokens mirrored in lib/tokens.ts for the OG image; no visual rows changed.
