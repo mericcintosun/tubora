@@ -64,9 +64,10 @@ Navigation: header has "A shared palette" (`/pack/marmara-dusk-four-tubes`), "Ho
 
 ### Interaction kit (K3 scroll)
 
-- Shipped: signature 1, dependency-free. `ScrollProvider` draws a progress bar as the 16 catalog pigments, eased by a small rAF spring that snaps instantly under reduced motion. `AnchorLink` uses native `window.scrollTo({ behavior: "smooth" })` with an 80px header offset for `#live-frame`. Lenis and motion were dropped because they were never installed or locked. To bring them back, run `npm install lenis motion` and restore the version from git history.
-- To build: signature 2, parallax depth. On `/` move the scene-2 illustration and its problem copy at different rates (needs `motion` or a hand-rolled scroll transform).
-- To build: signature 3, a sticky chapter section where vertical scroll drives horizontal movement through the steps (cluster, mix, pick, heatmap), ideally showing the Marmara plan at each stage from real `planPalette` output.
+- Phase 5 state (supersedes the earlier dependency-free note): all three signatures exist, on `lenis` ^1.3.27 and `motion` ^14.14.0. See "Phase 5 handover" at the end of this file.
+- Signature 1: `components/scroll-provider.tsx`, `<ReactLenis root>` (skipped under reduced motion) plus the tube-rack bar bound to `useScroll().scrollYProgress`; `AnchorLink` uses `lenis.scrollTo(href, { offset: -80 })`, native fallback otherwise.
+- Signature 2: `components/poster-parallax.tsx` on `/`: headline, student-set strip and scene 1 at three rates, Fredoka weight 700 to 500.
+- Signature 3: `components/step-chapters.tsx` on `/`: sticky `h-[300vh]` track, three chapters with server-computed Marmara facts.
 
 ### One-mark proof (`components/site-header.tsx`)
 
@@ -315,3 +316,60 @@ Phase 5: kit signatures 2 (parallax on `/`) and 3 (sticky horizontal chapters) w
 - The 90-second flow above works end to end on seed data, with no console errors.
 - The 4 to 3 slider moment rehearsed and recorded.
 - Devpost submitted, Google Form filled, Zoom slot confirmed for 3 Jan 2027.
+
+## Phase 5 handover: poster in motion, scroll chapters and the submission package
+
+### Goal
+DEMO steps 1 to 7 run unchanged in function. The poster on `/` now responds to scroll (headline weight 700 to 500 plus parallax), the rack bar fills under Lenis, a sticky section walks three chapters sideways with real Marmara numbers, and one CTA "Pack my tubes" (`/pack?scene=marmara-dusk`, header and hero) lands the judge on step 2. README, LICENSE, `docs/SCREENSHOTS.md` and `SUBMISSION.md` make up the submission package.
+
+### Status per slice
+- A1, poster shell and single CTA: done. Hero CTA is `<Link href={CTA_HREF}>Pack my tubes</Link>` with `CTA_HREF = /pack?scene=${SEED.defaultSceneId}` (= `/pack?scene=marmara-dusk`, the header's href). "or try it right here" stays an underlined `AnchorLink`. The fold is `min-h-[calc(100svh-4rem)]` holding only h1, a one-sentence lede and the CTA row; the strip and scene 1 sit below it. DEMO step 1 text updated (header or hero, same label).
+- A2, primitives: done for every bare control and the bespoke panels named in `.farm-delta.md`. `components/mobile-nav.tsx` menu button is now `Button variant="outline" size="icon"`. Saved plans (`app/pack/page.tsx`), "Missing piece" and recipe rows (`app/pack/[palette]/page.tsx`), the workspace control panel and recipe rows (`components/pack-workspace.tsx`) use `Card`. h1 on all four routes uses `text-[clamp(3.5rem,9vw,8rem)]`; h2 on the four routes is `text-3xl sm:text-5xl`. Not converted: the workspace `fieldset`, the upload error `<p>`, the phrase search panels and the share-link fallback box, which keep hand-written candy classes (all `rounded-2xl border-2 border-border`).
+- A3, simplification: done. Home section bodies are one sentence each; the "Why not one of the existing mixing apps?" `<details>` is untouched. `/how` method passes and the limits list fold behind one-line `<details>`; the phrase section keeps one sentence plus scene 3, with the long text in a `<details>`. The footer is one sentence plus Workspace, Method, Source on GitHub (`rel="noopener noreferrer"`) and InnovArt 2027.
+- B1, Lenis root and progress bar: done. `package.json` gains `"lenis": "^1.3.27"` and `"motion": "^14.14.0"`. No `requestAnimationFrame` left in `components/scroll-provider.tsx`.
+- B2, parallax and chapters: done. `components/poster-parallax.tsx` and `components/step-chapters.tsx`, both `"use client"`, both import `motion/react` and call `useTransform`.
+- B3, scene slots 4 to 6: done, as hand-drawn SVG fallbacks.
+- C1, README truth pass, LICENSE, screenshot list: done. `scripts/proof.ts` unchanged (no new number added; its `TARGETS` already includes `SUBMISSION.md`).
+- C2, SUBMISSION.md and hygiene: done. `.gitignore` already covers `.env*` with `!.env.example`; `.env.example` unchanged.
+- Build, tests, proof: not run by the agent.
+
+### Decisions
+- **CTA unification.** One label, one href, two places: the header button (`components/site-header.tsx`, unchanged, hidden below `sm` where the mobile menu carries it) and the hero button (`app/page.tsx`). "Open the sunset example" is gone from the repo.
+- **Slot to route pairs.** 1 `/` poster (parallax layer below the fold), 2 `/` problem section, 3 `/how` phrase section, 4 `/pack` beside the intro (from `md` up), 5 `/pack/[palette]` below the plan, 6 `/` closing section. There is no `public/brand/`, so all six render the SVG fallbacks in `public/illustrations/scene-{1..6}.svg`; 4, 5 and 6 are new this phase, drawn in IDENTITY hexes only.
+- **Seed source for the chapter numbers.** `chapterFacts()` in `app/page.tsx` runs on the server: `getAdapter().getPlan(encodePlanId({ sceneId: SEED.defaultSceneId, k: SEED.defaultK, owned: SEED.studentSet }))` and `listScenes()` (the same calls `app/pack/[palette]/page.tsx` makes), plus `buildMixTable(adapter.mixEngine).length` (the same call `/how` makes). Chapter 1 shows the plan's cluster colors (`recipes[].clusterRgb`, 24 on this scene), chapter 2 the 12 `SEED.studentSet` tubes and the mix table size, chapter 3 the k picks and `unreachableShare`. The strip in the poster is `SEED.studentSet` mapped to `SEED.tubes`. No planner number is typed by hand.
+- **Lenis as a childless sibling.** `ScrollProvider` renders `<ReactLenis root />` next to the tree, not around it, and only once `useReducedMotion()` reports `false`. Wrapping the tree would remount the whole page when Lenis turns on after hydration. `useLenis()` in `AnchorLink` reads the root instance.
+- **No off-screen server HTML.** `StepChapters` renders a vertical list of sections on the server and under reduced motion; it switches to the sticky sideways track only after hydration with motion allowed. `PosterParallax` server-renders its resting state (y 0, weight 700) and binds no motion value under reduced motion.
+- **Entrance vs parallax.** `tubora-enter` moved from the h1 to a wrapper div, because the keyframe's `both` fill mode would override Motion's inline `transform` on the h1.
+- **CLAUDE.md "never touch".** CLAUDE.md lists `components/scroll-provider.tsx` and `public/illustrations/*` as never-touch. This phase's spec explicitly assigns the scroll-provider rewrite and the scene-4 to scene-6 files, so I followed the phase spec. scene-1 to scene-3 are unchanged. CLAUDE.md itself was not edited; a later phase may want to update that line.
+- The progress bar is now `aria-hidden` (it was a `role="progressbar"` without a value). It is decoration that mirrors the scrollbar.
+
+### Failed attempts
+None.
+
+### Files changed
+`package.json`, `components/scroll-provider.tsx`, `components/poster-parallax.tsx` (new), `components/step-chapters.tsx` (new), `components/mobile-nav.tsx`, `components/pack-workspace.tsx`, `app/page.tsx`, `app/layout.tsx`, `app/pack/page.tsx`, `app/pack/[palette]/page.tsx`, `app/how/page.tsx`, `public/illustrations/scene-4.svg` (new), `public/illustrations/scene-5.svg` (new), `public/illustrations/scene-6.svg` (new), `README.md`, `LICENSE` (new), `docs/SCREENSHOTS.md` (new), `SUBMISSION.md` (new), `DEMO.md` (step 1 wording), `IDENTITY.md` (Amendments only), `HANDOFF.md`.
+
+### Commands run
+None, because the agent cannot run commands.
+
+### Risks for the runner
+- **`motion` ^14.14.0 may not be published.** The range is the one IDENTITY.md mandates, but the agent could not check the npm registry. If `npm install` reports no matching version, that is an IDENTITY-level decision (the range is in the key block's kit section); record it here rather than silently picking another major.
+- `<ReactLenis root options={{ lerp: 0.12 }} />` is used without children. If the installed `lenis/react` types make `children` required, pass `{null}` as children.
+- `ImageData` in `components/heatmap-canvas.tsx`: annotate the return as `Uint8ClampedArray<ArrayBuffer>` if TypeScript complains (Phase 4 note).
+- `app/page.tsx` now builds a plan and the mix table at render (static prerender at build). On `ADAPTER_MODE=real` that is the spectral table, about the cost of one `/pack/[palette]` render.
+
+### Open questions
+- Discord: does the Adaption AI Application Award need an opt-in, or does it have its own criteria? (`DELIVERY.md` and `SUBMISSION.md` carry the same `action:` line until it is answered.)
+- Discord: eligibility conflict (Devpost "students only, 13+" vs overview "all ages").
+- Ask first: the Web Worker plus a `primeMixTable` export in `lib/planner.ts`. Still not approved, still not built.
+- `/pack` h1 at the full display clamp pushes the workspace about one headline lower than before; check at 1280 that the sunset is still visible on load (DEMO step 2), and shrink only with an IDENTITY amendment if not.
+
+### Next best step
+Phase 6: apply the judge panel round 1.
+
+### Manual submit checklist (builder)
+1. Presenter name and contact, country and time zone for the Google Form (the link is on Discord); the rest of the form is in `SUBMISSION.md`.
+2. Submit on Devpost before 2 Jan 2027 12:00 EST, using the fields in `SUBMISSION.md`.
+3. Confirm the Zoom slot on 3 Jan 2027 (10 minutes, about 3 of them questions).
+4. Paste your own video link into the form yourself; the repo carries none.
+5. Run Adaption (`python scripts/adaption_invent.py` with your key, then `npm run seed` and `npm run proof`) and publish the dataset on Hugging Face. If no credits arrive, remove the Adaption claim from `README.md`, `SUBMISSION.md` and the Devpost text.
