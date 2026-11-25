@@ -1,0 +1,35 @@
+import Link from "next/link";
+import { BrandMark } from "@/components/brand-mark";
+import { Button } from "@/components/ui/button";
+
+const LINKS = [
+  { href: "/pack/marmara-dusk-four-tubes", label: "A shared palette" },
+  { href: "/how", label: "How it works" },
+];
+
+export function SiteHeader() {
+  return (
+    <header className="sticky top-0 z-40 border-b-2 border-border bg-background">
+      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4">
+        <Link href="/" className="flex items-center gap-2 font-display text-2xl font-semibold">
+          <BrandMark size={32} />
+          Tubora
+        </Link>
+        <nav className="flex items-center gap-1 sm:gap-3" aria-label="Main">
+          {LINKS.map((l) => (
+            <Link
+              key={l.href}
+              href={l.href}
+              className="hidden rounded-full px-3 py-1.5 text-sm font-bold underline-offset-4 hover:bg-muted hover:underline sm:inline-block"
+            >
+              {l.label}
+            </Link>
+          ))}
+          <Button asChild size="sm">
+            <Link href="/pack?scene=marmara-dusk">Pack my tubes</Link>
+          </Button>
+        </nav>
+      </div>
+    </header>
+  );
+}
