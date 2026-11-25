@@ -46,7 +46,7 @@ Tubora treats palette packing as an optimization problem over the entire referen
 1. **Cluster.** The image is scaled to 96 by 64 pixels and grouped into 24 colors with k-means in OKLab. Each group is weighted by how much of the canvas it covers.
 2. **Mix.** Every 1, 2 and 3 tube combination of a 16-pigment catalog (PW6, PY35, PY42, PO20, PR108, PR101, PV19, PV23, PB29, PB15:3, PB35, PG18, PG17, PBr7 and friends) is mixed on a six-part grid with a Kubelka-Munk model: 6,216 candidate mixes. Which Kubelka-Munk model depends on the build, see "Mixing engine" below.
 3. **Pick.** A greedy pass adds whichever owned tube cuts the picture's weighted CIEDE2000 error the most, until the bag holds `k` tubes.
-4. **Show the gap.** Every pixel is compared with the best mix its group can reach. Anything more than 6 CIEDE2000 units off turns red. The same pass names the tube that would help most if you made room for it.
+4. **Show the gap.** Each color group is compared with the best mix the packed tubes can reach, and every pixel in it takes that error, so photo grain never counts against the palette. Any group more than 6 CIEDE2000 units off turns red. The same pass names the tube that would help most if you made room for it.
 
 The demo moment: on the Marmara sunset with a 12-tube student set, slide from 4 tubes to 3 and the red spreads across the sunset. Click the planner's own "Add <tube>" suggestion and the error comes back down. The tube it names comes from the live engine; `npm run proof` writes it into `DEMO.md` step 4.
 
@@ -68,8 +68,8 @@ Ultramarine Blue and Cadmium Yellow Light, 1:1. Hue is the OKLab hue angle (gree
 
 | Engine | Mix | Hue | Mixes in table | Table build (ms) |
 | --- | --- | --- | --- | --- |
-| km-rgb | rgb(47, 54, 7) | 118° | 6216 | 50 |
-| spectral | rgb(119, 146, 61) | 124° | 6216 | 159 |
+| km-rgb | rgb(47, 54, 7) | 118° | 6216 | 55 |
+| spectral | rgb(119, 146, 61) | 124° | 6216 | 183 |
 
 spectral.js answered every spectral mix in this run.
 <!-- PROOF:END mix-engine -->
@@ -81,12 +81,12 @@ Dusk over the Sea of Marmara, 12-tube student set.
 
 | Engine | Tubes | Avg error (CIEDE2000) | Out of reach | Suggestion |
 | --- | --- | --- | --- | --- |
-| km-rgb | 5 | 6.13 | 53.6% | Cadmium Orange, error drops to 4.4 |
-| km-rgb | 4 | 7.10 | 60.3% | Cadmium Orange, error drops to 4.9 |
-| km-rgb | 3 | 9.24 | 67.4% | Cadmium Orange, error drops to 7.1 |
-| spectral | 5 | 4.04 | 24.3% | none |
-| spectral | 4 | 5.20 | 43.8% | Ivory Black, error drops to 4.0 |
-| spectral | 3 | 9.29 | 87.6% | Quinacridone Rose, error drops to 5.2 |
+| km-rgb | 5 | 6.13 | 48.1% | Cadmium Orange, error drops to 4.4 |
+| km-rgb | 4 | 7.10 | 58.2% | Cadmium Orange, error drops to 4.9 |
+| km-rgb | 3 | 9.24 | 66.2% | Cadmium Orange, error drops to 7.1 |
+| spectral | 5 | 4.04 | 24.1% | none |
+| spectral | 4 | 5.20 | 42.9% | Ivory Black, error drops to 4.0 |
+| spectral | 3 | 9.29 | 88.6% | Quinacridone Rose, error drops to 5.2 |
 <!-- PROOF:END wow-numbers -->
 
 The six demo steps on the real engine, timed (`npm run proof` fills this in):
@@ -96,13 +96,13 @@ The DEMO.md steps on the spectral engine, Marmara dusk, 12-tube student set. Ste
 
 | Step | File | Engine | Result | ms |
 | --- | --- | --- | --- | --- |
-| 2 | `components/pack-workspace.tsx` | spectral | 24 color groups, 6216 mixes | 315 |
-| 3 | `components/pack-workspace.tsx` | spectral | 5 tubes, average error 4.0, 24.3% out of reach | 48 |
-| 4 | `components/pack-workspace.tsx` | spectral | k=3: average error 9.3, 87.6% out of reach, suggests Quinacridone Rose, error drops to 5.2 | 42 |
+| 2 | `components/pack-workspace.tsx` | spectral | 24 color groups, 6216 mixes | 303 |
+| 3 | `components/pack-workspace.tsx` | spectral | 5 tubes, average error 4.0, 24.1% out of reach | 30 |
+| 4 | `components/pack-workspace.tsx` | spectral | k=3: average error 9.3, 88.6% out of reach, suggests Quinacridone Rose, error drops to 5.2 | 22 |
 | 5 | `components/phrase-search.tsx` | keyword | "karın üstünde akşam gölgesi" (score 1.00), mix Cad Yellow 1 : Quin Rose 2 : Ultramarine 3 | 3 |
-| 6 | `app/pack/[palette]/page.tsx` | spectral | 4 tubes, 24 recipes, average error 5.2 | 334 |
+| 6 | `app/pack/[palette]/page.tsx` | spectral | 4 tubes, 24 recipes, average error 5.2 | 318 |
 
-Out of reach by tube count (spectral): k=2 98.2%, k=3 87.6%, k=4 43.8%, k=5 24.3%, k=6 13.9%, k=7 13.2%.
+Out of reach by tube count (spectral): k=2 100.0%, k=3 88.6%, k=4 42.9%, k=5 24.1%, k=6 10.6%, k=7 10.6%.
 <!-- PROOF:END demo-path -->
 
 Tests:

@@ -69,7 +69,7 @@ export default async function PalettePage({ params }: { params: Params }) {
         <p className="mt-4 max-w-[65ch] text-lg leading-relaxed">
           {pct === 0
             ? `Every part of this picture is within reach. Average error ${plan.avgError.toFixed(1)}.`
-            : `${pct}% of the picture is out of reach with this palette (average error ${plan.avgError.toFixed(1)}). ${scene.challenge}`}
+            : `These ${plan.selected.length} tubes mix ${100 - pct}% of the picture closely (average error ${plan.avgError.toFixed(1)}). The other ${pct}% is the part to plan around, marked in red below. What makes this scene hard: ${scene.challenge.charAt(0).toLowerCase()}${scene.challenge.slice(1)}`}
         </p>
         <p className="mt-3">
           <Badge variant={mixEngine === "spectral" ? "ok" : "secondary"} className="whitespace-normal text-left">

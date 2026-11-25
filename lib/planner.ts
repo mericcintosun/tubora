@@ -287,14 +287,23 @@ export function planPalette(a: Analysis, ownedIds: string[], k: number): Palette
   };
 }
 
+/**
+ * Per-pixel error of a plan: each pixel carries the CIEDE2000 between its color group and the
+ * best mix the packed tubes give that group. That is the palette's reach for the area the painter
+ * actually mixes. Comparing each raw pixel with the mix instead also counted the sensor grain and
+ * the spread inside each of the 24 groups, which no palette can close (even a perfect mix of the
+ * group color left those pixels red), so the share disagreed with the recipe badges and the
+ * average error shown next to it.
+ */
 function pixelErrors(a: Analysis, clusterMix: number[]): Float32Array {
   const count = a.pixels.width * a.pixels.height;
+  const M = a.mixes.length;
   const out = new Float32Array(count);
   for (let i = 0; i < count; i++) {
-    const m = clusterMix[a.assign[i]];
+    const c = a.assign[i];
+    const m = clusterMix[c];
     if (m < 0) continue;
-    const d = a.pixels.data;
-    out[i] = deltaE2000(rgbToLab([d[i * 3], d[i * 3 + 1], d[i * 3 + 2]]), a.mixes[m].lab);
+    out[i] = a.deltas[c * M + m];
   }
   return out;
 }

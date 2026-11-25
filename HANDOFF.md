@@ -373,3 +373,14 @@ Phase 6: apply the judge panel round 1.
 3. Confirm the Zoom slot on 3 Jan 2027 (10 minutes, about 3 of them questions).
 4. Paste your own video link into the form yourself; the repo carries none.
 5. Run Adaption (`python scripts/adaption_invent.py` with your key, then `npm run seed` and `npm run proof`) and publish the dataset on Hugging Face. If no credits arrive, remove the Adaption claim from `README.md`, `SUBMISSION.md` and the Devpost text.
+
+## QA round 1: "out of reach" share on the shared plan pages
+
+Finding: `/pack/marmara-dusk-four-tubes`, `/pack/marmara-dusk.k4.eb77` and `/pack/marmara-dusk-three-tubes` led with "44% / 88% of the picture is out of reach with this palette", which a judge reads as a failure banner.
+
+Root cause: `pixelErrors` in `lib/planner.ts` compared every raw pixel with its group's mix. That error also counted the synthetic grain (plus or minus 5 per channel in `renderScene`) and the color spread inside each of the 24 groups. No palette can close either of those: even a perfect mix of the group color left those pixels red. So the share and the red wash were inflated and disagreed with the recipe badges and the average error printed next to them (average 5.2, yet 44% "over 6").
+
+Fix: each pixel now takes its group's error against the best mix (`a.deltas`), so the red share, the heatmap and the recipe badges all measure the same thing. The result page sentence now leads with what the tubes do reach and gives the scene's hard part as a planning note. `/how` and README step 4 describe the new rule. The proof blocks in README.md, DEMO.md and SUBMISSION.md regenerate on the next `npm run proof`. The 43.8% / 87.6% figures in the Phase 3 open question above come from the old metric.
+
+### QA: external findings
+None this round.

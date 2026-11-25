@@ -69,7 +69,7 @@ export default function HowPage() {
     {
       title: "Paint the error",
       line: `Anything off by more than ${UNREACHABLE} turns red.`,
-      body: `Every pixel is compared with the best mix its group can reach. Pixels off by more than ${UNREACHABLE} CIEDE2000 units are washed in red. The same pass tries every tube you did not pack and names the one that would help most.`,
+      body: `Each color group is compared with the best mix the packed tubes can reach, and every pixel in it takes that error, so photo grain never counts against the palette. Groups off by more than ${UNREACHABLE} CIEDE2000 units are washed in red. The same pass tries every tube you did not pack and names the one that would help most.`,
     },
   ];
 
