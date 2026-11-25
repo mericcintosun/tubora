@@ -206,8 +206,8 @@ export function PackWorkspace({
           {!noTubes && (
             <p className="mt-4 max-w-[65ch] text-sm leading-relaxed">
               Average color error is <strong>{plan.avgError.toFixed(1)}</strong> (CIEDE2000; under 2 looks identical, over{" "}
-              {UNREACHABLE} looks like a different color). <strong>{unreachablePct}%</strong> of this picture is out of reach
-              with these {plan.selected.length} tubes.
+              {UNREACHABLE} looks like a different color). <strong>{100 - unreachablePct}%</strong> of this picture mixes
+              closely with these {plan.selected.length} tubes; the rest is washed in red.
             </p>
           )}
           <p className="mt-3">
