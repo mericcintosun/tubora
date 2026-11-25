@@ -146,6 +146,58 @@ None, the agent cannot run commands.
 ### Next best step
 Phase 2: spectral.js mixing plus a Web Worker behind `ADAPTER_MODE=real`, and the Adaption Invent rows into `fixtures/phrases.json` (through `fixtures/phrases.sample.json` and `npm run seed`), with `fixtures/adaption-evaluation.sample.json` holding the real score.
 
+## Phase 2 handover: spectral mixing behind the adapter seam
+
+### Goal
+Make one mechanism real: spectral.js reflectance mixing (Kubelka-Munk over reflectance curves) builds the mix table for every 2 and 3 tube recipe when `ADAPTER_MODE=real`. `kmMix` stays byte-identical as the permanent fake engine.
+
+### Mechanism that went real
+`MIXERS.spectral` (`lib/mix/spectral.ts`, `spectralMix`) builds the mix table under `ADAPTER_MODE=real`, on server pages and in the browser workspace. Still on fixtures in both modes: `listPhrases`, `getPhraseEvaluation` and `listSavedPlans` (plus `listScenes`, which is seed data by design). The phrase rows stay seed samples until Phase 4.
+
+### Status per slice
+- Slice 1, config, errors, schemas: done. `lib/config.ts` is the only `ADAPTER_MODE` reader.
+- Slice 2, real engine: done, unverified at runtime (see Risks). `realAdapter` in `lib/adapter.real.ts`, selected only by `getAdapter()`.
+- Slice 3, client engine and mode line: done. `PackWorkspace`, `PlanPicture` and `PhraseSearch` take `mixEngine` as a plain prop. The badge text lives in `ENGINE_LINE` (`lib/mix/engines.ts`) so the server result page and the client workspace share one string.
+- Slice 4, tests and proof: done. `tests/mix.test.ts` has the 5 fixed inputs plus the schema check and a km-rgb identity check. `scripts/proof.ts` fills three README blocks.
+- Slice 5, Web Worker: **cut.** The table is about 6,200 mixes and is memoized per engine. Moving it to a worker would make `analyze` async in both client components and needs a cache-priming export in `lib/planner.ts`, which goes past the "engine parameter and per-engine caches only" fence. `WORKER_TIMEOUT_MS` and `WORKER_RETRIES` exist in `lib/config.ts` but nothing uses them yet.
+- Build: not run by the agent.
+
+### Decisions
+- Engine seam in `lib/planner.ts`: `buildMixTable(engine = "km-rgb")`, `analyze(pixels, k, engine = "km-rgb")` and `bestMixFor(rgb, tubeIdx, engine = "km-rgb")` pick `MIXERS[engine]`. `tableCache` is `Partial<Record<MixEngine, Mix[]>>`. All loops, the greedy pick and the error math are unchanged. Existing callers (`app/how/page.tsx`) compile unchanged and get km-rgb.
+- `bestMixFor` got the same optional engine parameter so the phrase box recipe uses the same table as the workspace.
+- `.farm-live.json` has empty `requiredEnv` and `optionalEnv`: spectral mixing runs in-process on the server and in the browser and needs no key.
+- AI-product items (prompts, response cache) do not apply: the mechanism is deterministic color physics, and the mix table is memoized per engine in `lib/planner.ts`.
+- `lib/adapter.ts` and `lib/adapter.real.ts` import each other. That is safe because `realAdapter` only calls into `lib/adapter.ts` inside its methods, never at module load.
+- `spectralMix` reads the library defensively: it accepts the v3 `Color` plus multi-color `mix([color, factor], ...)` API, and falls back to folding the older two-color `mix(a, b, t)` with cumulative weights. If spectral.js throws or returns a shape it cannot read, it logs `[core] spectral fallback engine=km-rgb reason=...` once and returns `kmMix` for that mix. `spectralHealth()` reports this, and `npm run proof` prints a warning in the README if it happened. The badge would still say "Live engine" in that case, so check the proof block.
+- `types/spectral-js.d.ts` was written because the package was not installed and its typings could not be checked. Since it is an ambient declaration, it wins over any bundled types.
+- The CDN model load in `components/phrase-search.tsx` is now bounded: each attempt races `MODEL_LOAD_TIMEOUT_MS` (30 s), with `MODEL_LOAD_RETRIES` (1) retries, then the keyword fallback. On a slow connection the first model download may need more than 30 s. Raise the constant if the human sees the fallback too often. `phrase-search.tsx` imports only these two constants from `lib/config.ts`, not `adapterMode()`.
+- Error responses: `{ ok: false, mode, error: ErrorCode, hint }` with codes and HTTP statuses in `lib/errors.ts`.
+- Suggestion tube: unknown until `npm run proof` runs. DEMO.md names Cadmium Orange, which came from the km-rgb engine. If the wow-numbers block shows another tube for spectral, update DEMO.md step 4 and the README demo line.
+
+### Risks for the runner
+- The spectral.js 3 export names (`Color`, `mix`) and the result format come from memory of its README, not from the installed package. If the build fails on `lib/mix/spectral.ts` or `types/spectral-js.d.ts`, read `node_modules/spectral.js/package.json` and its entry file and match the real names. If it builds but the proof shows the fallback warning, the same check applies.
+- `npm test` runs lib files through tsx as CommonJS. If spectral.js is ESM-only and the Node version cannot `require` ESM, test 1 fails or shows the fallback.
+
+### Failed attempts
+None.
+
+### Files changed
+`lib/config.ts`, `lib/errors.ts`, `lib/schemas.ts`, `lib/types.ts`, `lib/mix/spectral.ts`, `lib/mix/engines.ts`, `types/spectral-js.d.ts`, `lib/planner.ts` (seam only), `lib/adapter.ts`, `lib/adapter.real.ts`, `app/page.tsx`, `app/pack/page.tsx`, `app/pack/[palette]/page.tsx`, `app/api/plans/[palette]/route.ts`, `app/api/mix/route.ts`, `components/pack-workspace.tsx`, `components/heatmap-canvas.tsx`, `components/phrase-search.tsx`, `tests/mix.test.ts`, `scripts/proof.ts`, `README.md`, `.env.example`, `.farm-live.json`, `package.json`, `HANDOFF.md`, `IDENTITY.md` (Amendments only), `.farm-commits.json`.
+
+### Commands run
+None, the agent cannot run commands.
+
+### Env keys
+None required. `ADAPTER_MODE` is optional (`fake` default, `real` for spectral.js). `ADAPTION_API_KEY` is unchanged and only read by the Python script.
+
+### Open questions
+- Eligibility conflict: the Devpost box says "students only, 13+", the overview says all ages. Which one holds?
+- Adaption AI Application Award: does it need an opt-in, or does it have its own criteria?
+- DEMO step 4 tube name: confirm once `npm run proof` reports the spectral suggestion at k = 3.
+
+### Next best step
+Phase 3. If the worker matters for big uploads, add a `primeMixTable(engine, rgb)` export to `lib/planner.ts` (needs approval, it goes past the Phase 2 fence) and build `lib/mix/mix-table.worker.ts` on `WORKER_TIMEOUT_MS` and `WORKER_RETRIES`.
+
 ## 5. Definition of done
 
 - Deployed on Vercel at https://tubora.vercel.app, README demo link live, repo public.
