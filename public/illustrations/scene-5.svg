@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400" width="1200" height="400">
+  <rect width="1200" height="400" fill="#fde8e4"/>
+  <rect x="0" y="330" width="1200" height="70" fill="#f7c1ba" stroke="#2a1a1f" stroke-width="4"/>
+  <g stroke="#2a1a1f" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="520" y1="40" x2="380" y2="380"/>
+    <line x1="680" y1="40" x2="820" y2="380"/>
+    <line x1="600" y1="30" x2="600" y2="380"/>
+    <rect x="390" y="300" width="420" height="26" rx="10" fill="#fbd5cf"/>
+  </g>
+  <g transform="rotate(-2 600 170)" stroke="#2a1a1f" stroke-width="5" stroke-linejoin="round">
+    <rect x="430" y="60" width="340" height="230" rx="24" fill="#ffffff"/>
+    <rect x="455" y="85" width="56" height="56" rx="14" fill="#d93a25"/>
+    <rect x="525" y="85" width="56" height="56" rx="14" fill="#e2a400"/>
+    <rect x="595" y="85" width="56" height="56" rx="14" fill="#2a1a1f"/>
+    <rect x="665" y="85" width="56" height="56" rx="14" fill="#f7c1ba"/>
+    <rect x="455" y="162" width="200" height="16" rx="8" fill="#fbd5cf"/>
+    <rect x="455" y="192" width="250" height="16" rx="8" fill="#fbd5cf"/>
+    <rect x="455" y="222" width="170" height="16" rx="8" fill="#fbd5cf"/>
+    <rect x="455" y="252" width="220" height="16" rx="8" fill="#fbd5cf"/>
+    <circle cx="730" cy="230" r="22" fill="#d93a25"/>
+  </g>
+  <g stroke="#2a1a1f" stroke-width="5" stroke-linejoin="round">
+    <rect x="560" y="36" width="80" height="46" rx="12" fill="#e2a400"/>
+    <rect x="580" y="22" width="40" height="22" rx="8" fill="#2a1a1f"/>
+  </g>
+  <g stroke="#2a1a1f" stroke-width="5" stroke-linejoin="round">
+    <path d="M60 330 C140 250 230 250 300 330 Z" fill="#fbd5cf"/>
+    <path d="M900 330 C980 230 1080 230 1160 330 Z" fill="#fbd5cf"/>
+    <circle cx="1060" cy="90" r="46" fill="#e2a400"/>
+  </g>
+  <g fill="none" stroke="#2a1a1f" stroke-width="5" stroke-linecap="round">
+    <path d="M120 90 C160 76 200 104 240 90"/>
+    <path d="M150 130 C190 116 230 144 270 130"/>
+  </g>
+</svg>
