@@ -3,19 +3,42 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { RouteEmptyState } from "@/components/route-states";
 import { SceneSlot } from "@/components/scene-slot";
-import { PHRASES } from "@/lib/phrases";
+import { getAdapter } from "@/lib/adapter";
+import { ENGINE_LINE } from "@/lib/mix/engines";
 import { buildMixTable, CLUSTERS, FRAME_H, FRAME_W, UNREACHABLE } from "@/lib/planner";
-import { TUBES } from "@/lib/data";
+import { SEED } from "@/lib/seed";
 
 export const metadata: Metadata = {
   title: "How it works",
   description: "OKLab clustering, Kubelka-Munk mixing, greedy tube selection, CIEDE2000 heatmaps and the Adaption phrase set.",
 };
 
+/** Empty branch of the phrase section: no rows means nothing to search yet. */
+function PhrasesEmptyState() {
+  return (
+    <RouteEmptyState
+      className="mt-4"
+      title="No painter phrases loaded"
+      body="The phrase set is empty in this build. The planner still works: pack the sunset and read the recipes."
+      ctaHref="/pack?scene=marmara-dusk"
+      ctaLabel="Pack the sunset"
+    />
+  );
+}
+
 export default function HowPage() {
-  const mixCount = buildMixTable().length;
-  const langs = new Set(PHRASES.map((p) => p.lang)).size;
+  const adapter = getAdapter();
+  const phrases = adapter.listPhrases();
+  const tubes = SEED.tubes;
+  const mixCount = buildMixTable(adapter.mixEngine).length;
+  const langs = new Set(phrases.map((p) => p.lang)).size;
+  const engineLine = ENGINE_LINE[adapter.mixEngine];
+  const mixBody =
+    adapter.mixEngine === "spectral"
+      ? "Each tube's color becomes a reflectance curve, the curves are mixed with Kubelka-Munk and the result comes back to screen color, so blue and yellow land on green the way paint does."
+      : "Each mix uses a single-constant Kubelka-Munk model per channel, which absorbs light the way pigment does instead of averaging it like screen colors.";
 
   const stages = [
     {
@@ -24,7 +47,7 @@ export default function HowPage() {
     },
     {
       title: "Mix every combination",
-      body: `All ${TUBES.length} catalog tubes are mixed alone, in pairs and in threes on a six-part grid: ${mixCount.toLocaleString("en-US")} candidate mixes. Mixing uses a single-constant Kubelka-Munk model per channel, which absorbs light the way pigment does instead of averaging it like screen colors.`,
+      body: `All ${tubes.length} catalog tubes are mixed alone, in pairs and in threes on a six-part grid: ${mixCount.toLocaleString("en-US")} candidate mixes. ${engineLine} ${mixBody}`,
     },
     {
       title: "Pick tubes greedily",
@@ -83,11 +106,15 @@ export default function HowPage() {
             Transformers.js sentence embeddings (paraphrase-multilingual-MiniLM-L12-v2), with a keyword fallback if the model
             cannot load.
           </p>
-          <div className="mt-4 flex flex-wrap gap-2">
-            <Badge variant="secondary">{PHRASES.length} seed rows today</Badge>
-            <Badge variant="outline">{langs} languages</Badge>
-            <Badge variant="default">about 600 rows after the Adaption run</Badge>
-          </div>
+          {phrases.length === 0 ? (
+            <PhrasesEmptyState />
+          ) : (
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Badge variant="secondary">{phrases.length} seed rows today</Badge>
+              <Badge variant="outline">{langs} languages</Badge>
+              <Badge variant="default">about 600 rows after the Adaption run</Badge>
+            </div>
+          )}
         </div>
       </section>
 
@@ -95,7 +122,12 @@ export default function HowPage() {
         <h2 id="limits-title" className="font-display text-3xl font-semibold sm:text-4xl">Where it is wrong</h2>
         <ul className="mt-4 max-w-[65ch] list-disc space-y-2 pl-5 leading-relaxed">
           <li>Tube colors are sRGB estimates of masstone swatches, not measured reflectance curves. Brands differ.</li>
-          <li>Three-channel Kubelka-Munk misses some hue shifts that a full spectral model catches; spectral.js is next.</li>
+          <li>
+            {engineLine}{" "}
+            {adapter.mixEngine === "spectral"
+              ? "Its reflectance curves are rebuilt from the sRGB estimates, so it is only as good as those swatches."
+              : "Three-channel Kubelka-Munk misses some hue shifts that the spectral engine catches."}
+          </li>
           <li>Tinting strength is ignored: one part phthalo is not one part ochre. Treat ratios as a starting point.</li>
           <li>Glazing, broken color and optical mixing are outside the model. It plans the palette, not the painting.</li>
         </ul>

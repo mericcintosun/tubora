@@ -31,6 +31,18 @@ import { cn } from "@/lib/utils";
 
 type Variant = "full" | "frame";
 
+/** Empty branch of the workspace (landing frame and /pack): no tubes ticked, one button to refill. */
+function WorkspaceEmptyState({ onRefill }: { onRefill: () => void }) {
+  return (
+    <Card role="status" className="tubora-enter p-5">
+      <p className="font-display text-lg font-semibold">Tick at least one tube you own and Tubora will pack the bag.</p>
+      <Button size="sm" className="mt-4" onClick={onRefill}>
+        Tick the student set again
+      </Button>
+    </Card>
+  );
+}
+
 export function PackWorkspace({
   initialSceneId,
   initialK,
@@ -56,6 +68,10 @@ export function PackWorkspace({
 
   const scene = sceneById(sceneId) ?? SCENES[0];
   const pixels = useMemo(() => upload?.pixels ?? renderScene(scene), [upload, scene]);
+  // DEMO steps 2 to 4, real path: the mix table is built with the engine the server chose
+  // (spectral under ADAPTER_MODE=real). Same-file fallback: spectralMix in lib/mix/spectral.ts
+  // catches a spectral.js failure per mix, logs "[core] spectral fallback engine=km-rgb" once
+  // and returns the kmMix estimate for that mix, so the slider never goes blank.
   const analysis = useMemo(() => analyze(pixels, undefined, mixEngine), [pixels, mixEngine]);
   const plan = useMemo(() => planPalette(analysis, owned, k), [analysis, owned, k]);
   const errors = useMemo(() => planErrors(analysis, plan), [analysis, plan]);
@@ -218,9 +234,7 @@ export function PackWorkspace({
         </div>
 
         {noTubes ? (
-          <Card role="status" className="p-5">
-            <p className="font-display text-lg font-semibold">Tick at least one tube you own and Tubora will pack the bag.</p>
-          </Card>
+          <WorkspaceEmptyState onRefill={() => setOwned(initialOwned)} />
         ) : (
         <div className={cn("grid gap-2", frame ? "sm:grid-cols-2 lg:grid-cols-4" : "")}>
           {plan.recipes.slice(0, frame ? 8 : 10).map((r, i) => (

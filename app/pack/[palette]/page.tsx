@@ -5,6 +5,7 @@ import { cache } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { PlanPicture } from "@/components/heatmap-canvas";
+import { RouteEmptyState } from "@/components/route-states";
 import { ShareLink } from "@/components/share-link";
 import { getAdapter } from "@/lib/adapter";
 import { rgbCss } from "@/lib/color";
@@ -24,6 +25,11 @@ const loadPlan = cache((palette: string) => {
 
 const tubeOf = (id: string) => SEED.tubes.find((t) => t.id === id);
 
+/** Empty branch of the recipe list: sends the painter back to the workspace with the same scene and count. */
+function RecipesEmptyState(props: { title: string; body: string; ctaHref: string; ctaLabel: string }) {
+  return <RouteEmptyState {...props} className="mt-3" />;
+}
+
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { palette } = await params;
   const found = loadPlan(palette);
@@ -41,7 +47,9 @@ export default async function PalettePage({ params }: { params: Params }) {
   if (!found) notFound();
   const { plan, scene } = found;
 
-  const mixEngine = getAdapter().mixEngine;
+  // The engine that really built this plan: a spectral failure falls back to km-rgb in
+  // planWithFallback (lib/adapter.real.ts), and the badge follows the plan, not the mode.
+  const mixEngine = plan.mixEngine;
   const pct = Math.round(plan.unreachableShare * 100);
   const suggested = plan.suggestion ? tubeOf(plan.suggestion.tubeId) : null;
   const saved = plan.saved;
@@ -110,9 +118,12 @@ export default async function PalettePage({ params }: { params: Params }) {
           <section aria-labelledby="recipes-title">
             <h2 id="recipes-title" className="font-display text-2xl font-semibold">Recipes, biggest areas first</h2>
             {plan.recipes.length === 0 ? (
-              <p className="mt-3 rounded-2xl border-2 border-border bg-card p-4 text-sm font-bold">
-                No recipes for this plan yet. Open it in the workspace and tick a few tubes.
-              </p>
+              <RecipesEmptyState
+                title="No recipes for this plan yet"
+                body="Open it in the workspace and tick a few tubes."
+                ctaHref={`/pack?scene=${scene.id}&k=${plan.k}`}
+                ctaLabel="Open in the workspace"
+              />
             ) : (
               <div className="overflow-x-auto">
                 <ul className="mt-3 space-y-2">
