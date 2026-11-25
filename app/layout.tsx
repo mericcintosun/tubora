@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Fredoka, Nunito } from "next/font/google";
+import { ChunkRecovery } from "@/components/chunk-recovery";
 import { ScrollProvider } from "@/components/scroll-provider";
 import { SiteHeader } from "@/components/site-header";
 import { NavLink } from "@/components/ui/nav-link";
@@ -13,6 +14,13 @@ const TITLE = "Tubora: four tubes, no wasted paint";
 const DESCRIPTION =
   "Tick the paints you own. Tubora picks the tubes to pack for one picture, gives every recipe and shows in red what they can't reach.";
 
+// Every page is rendered per request by the deployment that serves it. Prerendered HTML was
+// cached at the edge with a year-long s-maxage, so after a redeploy the live crawl got /how and
+// /pack/[palette] HTML from an older build (copy removed two commits earlier) whose
+// /_next/static chunks no longer existed (404). Dynamic HTML is sent as no-store and never
+// outlives its build. All pages are cheap to render: the planner works on a 96x64 frame.
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   metadataBase: new URL("https://tubora.vercel.app"),
   title: { default: TITLE, template: "%s | Tubora" },
@@ -24,6 +32,9 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${fredoka.variable} ${nunito.variable}`}>
+      <head>
+        <ChunkRecovery />
+      </head>
       <body className="min-h-screen antialiased">
         <ScrollProvider>
           <SiteHeader />
