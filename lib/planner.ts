@@ -3,8 +3,11 @@
 // per-pixel error for the heatmap. Pure functions, runs on the server (result pages) and in
 // the browser (workspace). TODO: move buildMixTable + analyze into a Web Worker for uploads.
 
-import { deltaE2000, kmMix, oklabToRgb, rgbToLab, rgbToOklab, type Lab, type RGB } from "./color";
+import { deltaE2000, oklabToRgb, rgbToLab, rgbToOklab, type Lab, type RGB } from "./color";
+import { CORE_LOG_PREFIX } from "./config";
 import { DEFAULT_K, SCENES, TUBES, planById, sceneById, type Scene } from "./data";
+import { MIXERS } from "./mix/engines";
+import type { MixEngine } from "./types";
 
 export const FRAME_W = 96;
 export const FRAME_H = 64;
@@ -81,17 +84,22 @@ export interface Mix {
 
 const gcd = (a: number, b: number): number => (b === 0 ? a : gcd(b, a % b));
 
-let tableCache: Mix[] | null = null;
+const tableCache: Partial<Record<MixEngine, Mix[]>> = {};
 
-/** Every 1, 2 and 3 tube mix on a 6-part grid across the full catalog (about 6,200 mixes). */
-export function buildMixTable(): Mix[] {
-  if (tableCache) return tableCache;
+const now = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
+
+/** Every 1, 2 and 3 tube mix on a 6-part grid across the full catalog (about 6,200 mixes), one table per engine. */
+export function buildMixTable(engine: MixEngine = "km-rgb"): Mix[] {
+  const cached = tableCache[engine];
+  if (cached) return cached;
+  const t0 = now();
+  const mixer = MIXERS[engine];
   const n = TUBES.length;
   const mixes: Mix[] = [];
   const push = (tubes: number[], parts: number[]) => {
     const g = parts.reduce(gcd);
     const p = parts.map((x) => x / g);
-    const rgb = tubes.length === 1 ? ([...TUBES[tubes[0]].rgb] as [number, number, number]) : kmMix(tubes.map((t) => TUBES[t].rgb), p);
+    const rgb = tubes.length === 1 ? ([...TUBES[tubes[0]].rgb] as [number, number, number]) : mixer(tubes.map((t) => TUBES[t].rgb), p);
     mixes.push({ tubes, parts: p, mask: tubes.reduce((m, t) => m | (1 << t), 0), rgb, lab: rgbToLab(rgb) });
   };
   for (let a = 0; a < n; a++) {
@@ -103,7 +111,8 @@ export function buildMixTable(): Mix[] {
       }
     }
   }
-  tableCache = mixes;
+  tableCache[engine] = mixes;
+  console.info(`${CORE_LOG_PREFIX} mix table built engine=${engine} mixes=${mixes.length} ms=${Math.round(now() - t0)}`);
   return mixes;
 }
 
@@ -124,7 +133,7 @@ export interface Analysis {
   mixes: Mix[];
 }
 
-export function analyze(pixels: Pixels, k = CLUSTERS): Analysis {
+export function analyze(pixels: Pixels, k = CLUSTERS, engine: MixEngine = "km-rgb"): Analysis {
   const count = pixels.width * pixels.height;
   const ok: Lab[] = new Array(count);
   for (let i = 0; i < count; i++) ok[i] = rgbToOklab([pixels.data[i * 3], pixels.data[i * 3 + 1], pixels.data[i * 3 + 2]]);
@@ -174,7 +183,7 @@ export function analyze(pixels: Pixels, k = CLUSTERS): Analysis {
     return { rgb, lab: rgbToLab(rgb), weight: counts[i] / count };
   });
 
-  const mixes = buildMixTable();
+  const mixes = buildMixTable(engine);
   const deltas = new Float32Array(k * mixes.length);
   for (let c = 0; c < k; c++) {
     if (clusters[c].weight === 0) continue;
@@ -297,11 +306,11 @@ export function planErrors(a: Analysis, plan: PalettePlan): Float32Array {
 }
 
 /** Closest mix to one target color using only the given tubes (used by phrase search). */
-export function bestMixFor(rgb: RGB, tubeIdx: number[]): { mix: Mix; error: number } | null {
+export function bestMixFor(rgb: RGB, tubeIdx: number[], engine: MixEngine = "km-rgb"): { mix: Mix; error: number } | null {
   const mask = tubeIdx.reduce((m, t) => m | (1 << t), 0);
   const lab = rgbToLab(rgb);
   let best: { mix: Mix; error: number } | null = null;
-  for (const mix of buildMixTable()) {
+  for (const mix of buildMixTable(engine)) {
     if ((mix.mask & ~mask) !== 0) continue;
     const e = deltaE2000(lab, mix.lab);
     if (!best || e < best.error) best = { mix, error: e };
