@@ -64,8 +64,8 @@ export default function Home() {
             Dusk over the Sea of Marmara, 12 tubes owned
           </h2>
           <p className="mt-3 max-w-[65ch] text-base leading-relaxed">
-            This is the real planner running in your browser. Pull the slider to 3 and the orange band of sky goes red. Click
-            the suggestion and it comes back.
+            This is the real planner running in your browser. Pull the slider from 4 to 3 and the red spreads across the
+            sunset. The planner names the one tube that pulls it back.
           </p>
           <div className="mt-8">
             <PackWorkspace
@@ -122,6 +122,10 @@ export default function Home() {
           ))}
         </ol>
         <p className="mt-16 max-w-[65ch] text-lg">
+          Every plan has its own page with a palette card to download for the field bag, and a phrase box that turns
+          &ldquo;evening shadow on snow&rdquo; into a recipe from the tubes you packed.
+        </p>
+        <p className="mt-4 max-w-[65ch] text-lg">
           The full method, the honest limits of sRGB tube swatches, and how the Adaption-generated phrase set plugs in are on{" "}
           <Link href="/how" className="font-bold text-primary underline decoration-2 underline-offset-4">
             the method page
