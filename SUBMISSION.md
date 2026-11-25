@@ -23,7 +23,7 @@ Open a reference picture and tick the tubes you own. Tubora clusters the picture
 On the Marmara sunset with a 12 tube student set, the demo moment reads:
 
 <!-- PROOF:BEGIN demo-step4 -->
-Slide from 4 to 3: average error 5.2 to 9.3, out of reach 42.9% to 88.6%. The planner suggests Quinacridone Rose: error drops to 5.2.
+Slide from 4 to 3: average error 4.3 to 5.9, out of reach 33.0% to 53.1%. The planner suggests Cadmium Red Light: error drops to 4.3.
 <!-- PROOF:END demo-step4 -->
 
 **How we built it**

@@ -18,7 +18,7 @@ Demo start route: `/` (`app/page.tsx`)
 4. Same screen, `components/pack-workspace.tsx`: slide to 3. The stickers change, the red spreads and the average error jumps. Click the planner's "Add <tube>" suggestion and the error drops back. **This is the wow step.**
 
 <!-- PROOF:BEGIN demo-step4 -->
-Slide from 4 to 3: average error 5.2 to 9.3, out of reach 42.9% to 88.6%. The planner suggests Quinacridone Rose: error drops to 5.2.
+Slide from 4 to 3: average error 4.3 to 5.9, out of reach 33.0% to 53.1%. The planner suggests Cadmium Red Light: error drops to 4.3.
 <!-- PROOF:END demo-step4 -->
 5. Same screen, `components/phrase-search.tsx`: type "karın üstünde akşam gölgesi" and get the color and its recipe from the packed tubes. The corpus is whatever `fixtures/phrases.sample.json` holds: today the 18 seed rows, so the badge reads "seed sample, awaiting Adaption run". Once `scripts/adaption_invent.py` has written Adaption rows, `activePhrases()` in `lib/phrases.ts` serves those instead and the match shows the line "Adaption evaluation: score X to Y (+Z%)". The README `adaption` proof block says which case this build is in.
 6. `/pack/marmara-dusk-four-tubes`, `app/pack/[palette]/page.tsx`: the shared plan, with a copy-link button. `/how` (`app/how/page.tsx`) is the method page for questions.
