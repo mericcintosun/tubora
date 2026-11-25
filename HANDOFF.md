@@ -198,6 +198,48 @@ None required. `ADAPTER_MODE` is optional (`fake` default, `real` for spectral.j
 ### Next best step
 Phase 3. If the worker matters for big uploads, add a `primeMixTable(engine, rgb)` export to `lib/planner.ts` (needs approval, it goes past the Phase 2 fence) and build `lib/mix/mix-table.worker.ts` on `WORKER_TIMEOUT_MS` and `WORKER_RETRIES`.
 
+## Phase 3 handover: the demo path on the real engine, end to end
+
+### Goal
+All six DEMO.md steps run on the real flow under `ADAPTER_MODE=real` (spectral.js), each with a same-file fallback; every demo route has skeleton, error and empty branches; DEMO.md step 4 is written by `npm run proof` from the real engine with no hard-coded tube name; `npm run demo:reset` returns the demo to its start state.
+
+### Status per slice
+- Slice 1, real path plus same-file fallback: done. `planWithFallback` in `lib/adapter.real.ts` (spectral, then km-rgb with one `[core] real fallback getPlan id=... reason=...` line per failure). `/pack/[palette]` reads the badge engine from `plan.mixEngine`. `/how` reads `listPhrases()`, `SEED.tubes` and `mixEngine` through `getAdapter()` / `SEED`, calls `buildMixTable(adapter.mixEngine)` and names the engine from `ENGINE_LINE`. Fallback comment next to the `analyze` useMemo in `components/pack-workspace.tsx`. `components/share-link.tsx` has a `copying` state bound to `disabled` and a `copyFallback` that shows the full URL as selectable text.
+- Slice 2, state triad: done. `components/route-states.tsx` (`RouteSkeleton`, `RouteErrorState`, `RouteEmptyState`, no `"use client"`, `tubora-enter`, no pulse, no new keyframe). Route files: `app/loading.tsx` (`HomeSkeleton`), `app/error.tsx` (`RootErrorState`), `app/pack/loading.tsx` (`PackSkeleton`), `app/pack/error.tsx` (`PackErrorState`), `app/pack/[palette]/loading.tsx` (`PaletteSkeleton`), `app/pack/[palette]/error.tsx` (`PaletteErrorState`), `app/how/loading.tsx` (`HowSkeleton`), `app/how/error.tsx` (`HowErrorState`). Empty states: `WorkspaceEmptyState` (pack-workspace, "Tick the student set again" resets to `initialOwned`), `SavedPlansEmptyState` (`app/pack/page.tsx`), `RecipesEmptyState` (`app/pack/[palette]/page.tsx`), `PhrasesEmptyState` (`app/how/page.tsx`), `PhraseEmptyState` (`components/phrase-search.tsx`, same copy plus a "Use sunset" button).
+- Slice 3, next/image: done. `SceneSlot` and `BrandMark` render `next/image` with `unoptimized`; `priority` for scene 1 and for the header mark (it sits above the fold on every page). No `<img` left under `app/` or `components/`.
+- Slice 4, proof drives step 4: done. `TARGETS` includes `DEMO.md`. New blocks `demo-step4` (DEMO.md) and `demo-path` (README.md, with the k=2 to 7 sweep line). DEMO.md wow line and step 4 no longer name a tube. `/pack` intro now says "watch the red spread".
+- Slice 5, persistence, reset, docs: done. `scripts/demo-reset.ts`, `"demo:reset"` in `package.json`, README "Demo reset" section.
+- Build, tests, proof, reset: not run by the agent.
+
+### Decisions
+- **Store: none** (decision table row 1). Every demo step only reads seeded or computed data. Share links carry the whole plan in the id (`encodePlanId` / `resolvePlanId`), uploads stay in the browser, and the demo performs no server write. `lib/seed.ts` is the single data module; no `lib/store.ts`.
+  - Rejected, KV: there is no mutable state on the demo path.
+  - Rejected, Postgres: there are no relational reads.
+  - Rejected, chain: not a web3 stack.
+- **Write-path guards.** There is no server write. The two pending-bound controls are the `ShareLink` button (`disabled={state === "copying"}`) and the phrase "Find" button (`disabled={status === "loading"}`). Server idempotency is not applicable because nothing is written on the server.
+- **Step 4 is proof-driven.** The tube name and numbers in DEMO.md step 4 come from `planPalette` on the spectral engine (`SEED.defaultK` to `SEED.defaultK - 1`, Marmara dusk, student set). With no suggestion the line says "no suggestion at this count". The button on screen is the same `planPalette` suggestion, so the two cannot disagree as long as `ADAPTER_MODE=real` is set on the deploy.
+- The named empty states for the routes (`SavedPlansEmptyState`, `RecipesEmptyState`, `PhrasesEmptyState`) are thin local wrappers over `RouteEmptyState` in the route file, so each name lives where the table puts it. `WorkspaceEmptyState` and `PhraseEmptyState` are built on `Card` / `Button` directly because their CTA is an in-place button, not a link.
+- `demo-reset.ts` writes the phrase fixture first and then imports `lib/data`, `lib/adapter` and `lib/phrases` dynamically, so the checks read the fresh file.
+
+### Failed attempts
+None.
+
+### Files changed
+`lib/adapter.real.ts`, `app/how/page.tsx`, `app/how/loading.tsx` (new), `app/how/error.tsx` (new), `app/loading.tsx` (new), `app/error.tsx`, `app/pack/page.tsx`, `app/pack/loading.tsx`, `app/pack/error.tsx` (new), `app/pack/[palette]/page.tsx`, `app/pack/[palette]/loading.tsx`, `app/pack/[palette]/error.tsx` (new), `components/route-states.tsx` (new), `components/pack-workspace.tsx`, `components/share-link.tsx`, `components/phrase-search.tsx`, `components/scene-slot.tsx`, `components/brand-mark.tsx`, `scripts/proof.ts`, `scripts/demo-reset.ts` (new), `package.json`, `DEMO.md`, `README.md`, `HANDOFF.md`, `IDENTITY.md` (Amendments only), `.farm-commits.json`.
+
+### Commands run
+None, the agent cannot run commands.
+
+### Open questions
+- **Wow story under spectral at k=3.** The Phase 2 proof shows 87.6% of the sunset out of reach at k=3 (43.8% at k=4). That may read as "the whole picture goes red" rather than "the sky band goes red". Not tuned here (`lib/data.ts` is out of scope); for the wow-polish pass, check the `demo-path` sweep line and decide whether the scene layers, `UNREACHABLE` or the heatmap wash need work.
+- `app/page.tsx` still says "Pull the slider to 3 and the orange band of sky goes red". No tube name, but it may overstate what spectral shows at k=3. The `/` composition was frozen this phase, so the copy was left for the wow-polish pass.
+- Eligibility conflict: the Devpost box says "students only, 13+", the overview says all ages. Which one holds? (Discord)
+- Adaption AI Application Award: does it need an opt-in, or does it have its own criteria? (Discord)
+- Worker: if `demo-path` marks step 2 "over the 5 second rule", a Web Worker needs approval plus a `primeMixTable` export in `lib/planner.ts` (Phase 4 item).
+
+### Next best step
+Phase 4: the Adaption phrase run (verify the SDK calls, generate rows into `fixtures/phrases.sample.json`, `npm run seed`, real evaluation score) and the wow tuning from the `demo-step4` / `demo-path` numbers.
+
 ## 5. Definition of done
 
 - Deployed on Vercel at https://tubora.vercel.app, README demo link live, repo public.

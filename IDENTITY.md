@@ -87,3 +87,4 @@ Rules:
 
 - 2026-11-25: Phase 1: tokens mirrored in lib/tokens.ts for the OG image; no visual rows changed.
 - 2026-11-25: Phase 2: engine badge added via Badge, no visual rows changed.
+- 2026-11-25: Phase 3: route state components added, no visual rows changed.

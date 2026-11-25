@@ -8,7 +8,8 @@
     "start": "next start",
     "seed": "node scripts/seed.mjs",
     "test": "tsx --test tests/*.test.ts",
-    "proof": "tsx scripts/proof.ts"
+    "proof": "tsx scripts/proof.ts",
+    "demo:reset": "tsx scripts/demo-reset.ts"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.1.2",
