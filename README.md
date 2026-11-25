@@ -21,7 +21,7 @@ Tubora treats palette packing as an optimization problem over the entire referen
 
 The demo moment: on the Marmara sunset with a 12-tube student set, slide from 4 tubes to 3 and the red spreads across the sunset. Click the planner's own "Add <tube>" suggestion and the error comes back down. The tube it names comes from the live engine; `npm run proof` writes it into `DEMO.md` step 4.
 
-Every plan has its own URL (`/pack/marmara-dusk.k4.<owned-mask>` or a saved slug like `/pack/marmara-dusk-four-tubes`) with a copy-link button.
+Every plan has its own URL (`/pack/marmara-dusk.k4.<owned-mask>` or a saved slug like `/pack/marmara-dusk-four-tubes`) with a copy-link button and a "Download palette card" button: one A6 PNG for the field bag with the packed tubes, the top 8 recipes and the heatmap thumbnail.
 
 There is also a **"describe a color"** box. Type "karın üstünde akşam gölgesi" or "evening shadow on snow" and Tubora finds the closest painter phrase, then mixes it from the tubes you packed.
 
@@ -39,8 +39,8 @@ Ultramarine Blue and Cadmium Yellow Light, 1:1. Hue is the OKLab hue angle (gree
 
 | Engine | Mix | Hue | Mixes in table | Table build (ms) |
 | --- | --- | --- | --- | --- |
-| km-rgb | rgb(47, 54, 7) | 118° | 6216 | 41 |
-| spectral | rgb(119, 146, 61) | 124° | 6216 | 130 |
+| km-rgb | rgb(47, 54, 7) | 118° | 6216 | 50 |
+| spectral | rgb(119, 146, 61) | 124° | 6216 | 167 |
 
 spectral.js answered every spectral mix in this run.
 <!-- PROOF:END mix-engine -->
@@ -67,11 +67,11 @@ The DEMO.md steps on the spectral engine, Marmara dusk, 12-tube student set. Ste
 
 | Step | File | Engine | Result | ms |
 | --- | --- | --- | --- | --- |
-| 2 | `components/pack-workspace.tsx` | spectral | 24 color groups, 6216 mixes | 303 |
-| 3 | `components/pack-workspace.tsx` | spectral | 5 tubes, average error 4.0, 24.3% out of reach | 50 |
-| 4 | `components/pack-workspace.tsx` | spectral | k=3: average error 9.3, 87.6% out of reach, suggests Quinacridone Rose, error drops to 5.2 | 43 |
-| 5 | `components/phrase-search.tsx` | keyword | "karın üstünde akşam gölgesi" (score 1.00), mix Cad Yellow 1 : Quin Rose 2 : Ultramarine 3 | 3 |
-| 6 | `app/pack/[palette]/page.tsx` | spectral | 4 tubes, 24 recipes, average error 5.2 | 327 |
+| 2 | `components/pack-workspace.tsx` | spectral | 24 color groups, 6216 mixes | 337 |
+| 3 | `components/pack-workspace.tsx` | spectral | 5 tubes, average error 4.0, 24.3% out of reach | 54 |
+| 4 | `components/pack-workspace.tsx` | spectral | k=3: average error 9.3, 87.6% out of reach, suggests Quinacridone Rose, error drops to 5.2 | 65 |
+| 5 | `components/phrase-search.tsx` | keyword | "karın üstünde akşam gölgesi" (score 1.00), mix Cad Yellow 1 : Quin Rose 2 : Ultramarine 3 | 5 |
+| 6 | `app/pack/[palette]/page.tsx` | spectral | 4 tubes, 24 recipes, average error 5.2 | 402 |
 
 Out of reach by tube count (spectral): k=2 98.2%, k=3 87.6%, k=4 43.8%, k=5 24.3%, k=6 13.9%, k=7 13.2%.
 <!-- PROOF:END demo-path -->
@@ -84,9 +84,21 @@ Tests:
 
 ## How it uses the sponsor tech
 
-**Adaption (Adaption AI Application Award).** The phrase box searches a multilingual set of painter color phrases (English, Turkish, Spanish), each labelled with a target color, hue family, value and chroma. That set is generated with **Adaption Invent** by `scripts/adaption_invent.py`, which estimates the credit cost first, invents about 600 rows, pulls Adaption's dataset evaluation score and downloads JSONL. The live site ships the generated rows and shows each row's Adaption quality score next to the match. Without the Adaption set there is nothing to search, so the feature depends on it.
+| Bounty | Prize | Slots | Required tech | Code file | DEMO step |
+| --- | --- | --- | --- | --- | --- |
+| Adaption AI Application Award | $1,000 in Adaption credits for each team member; Adaption swag | 1 | Adaption | `scripts/adaption_invent.py` (generation), `lib/phrases.ts` (corpus selection), `components/phrase-search.tsx` (screen) | 5 |
 
-Status today: the script is written and the web search runs, against 18 hand-written seed rows in the same shape. The UI labels them as seed samples until the Adaption run lands.
+The prize wording on the event page, verbatim: "$1,000 in Adaption credits for each team member; Adaption swag". The page publishes no separate qualification text for this award; we read the name as "an AI application that uses the Adaption product", and we are asking on Discord whether it needs an opt-in.
+
+**Adaption (Adaption AI Application Award).** The phrase box searches a multilingual set of painter color phrases (English, Turkish, Spanish), each labelled with a target color, hue family, value and chroma. That set is generated with **Adaption Invent** by `scripts/adaption_invent.py`: it estimates the credit cost with `datasets.invent(..., estimate=True)`, runs the real invent as an instruction dataset, waits for it, reads `datasets.get_evaluation` (score before, score after, improvement), downloads JSONL, validates every row, and writes `fixtures/phrases.sample.json` and `fixtures/adaption-evaluation.sample.json` directly. `activePhrases()` in `lib/phrases.ts` then serves the Adaption rows instead of the seed rows, and the phrase box prints "Adaption evaluation: score X to Y (+Z%)" under every Adaption match (`/how` shows the same numbers).
+
+Depth: delete `scripts/adaption_invent.py` and nothing can produce the `adaption-invent` rows or the evaluation. Delete those rows from `fixtures/phrases.sample.json` and DEMO step 5 falls back to the "seed sample, awaiting Adaption run" badge, and the evaluation line disappears from `/pack` and `/how`.
+
+Status today: `fixtures/phrases.sample.json` holds the 18 hand-written seed rows (`source: "seed-sample"`) and no Adaption rows; `fixtures/adaption-evaluation.sample.json` says `"status": "pending"` with no scores. The paid run has not happened yet, so every screen labels the match as a seed sample. The block below is rewritten by `npm run proof` from those two files:
+
+<!-- PROOF:BEGIN adaption -->
+Not run in this build: no Adaption rows in fixtures/phrases.sample.json, the corpus is 18 seed rows.
+<!-- PROOF:END adaption -->
 
 **In-browser AI, no keys.** Queries are embedded in the browser with Transformers.js (`Xenova/paraphrase-multilingual-MiniLM-L12-v2`) and matched by cosine similarity. If the model cannot load, a keyword matcher takes over and the UI says which one answered.
 
@@ -113,16 +125,17 @@ npm test          # mixing engine checks (node:test through tsx)
 npm run proof     # measures both engines and rewrites the PROOF blocks in this README
 ```
 
-No environment variables are needed to run the app: `ADAPTER_MODE` defaults to `fake`, which serves the seed scenes, saved plans and phrase rows with the three-channel estimate engine. Set `ADAPTER_MODE=real` for spectral.js mixing; it needs no key. The six-step demo script lives in `DEMO.md`.
+No environment variables are needed to run the app: `ADAPTER_MODE` defaults to `fake`, which serves the seed scenes, saved plans and phrase rows with the three-channel estimate engine. Set `ADAPTER_MODE=real` for spectral.js mixing; it needs no key. The seven-step demo script lives in `DEMO.md`; where each prize track is watched is in `DELIVERY.md`, and the security notes are in `SECURITY.md`.
 
 To regenerate the phrase set with Adaption:
 
 ```bash
 pip install adaption
 ADAPTION_API_KEY=your-key python scripts/adaption_invent.py
+npm run seed
 ```
 
-See `.env.example`. Without a key the script writes the seed sample rows so the rest of the pipeline still runs.
+See `.env.example`. The key is build-time only: the Next.js app and Vercel never read it. Without a key the script touches nothing and says so. The dataset card for Hugging Face is `datasets/tubora-painter-phrases/README.md`.
 
 ## Demo reset
 
@@ -144,7 +157,6 @@ There is no database and nothing to migrate: every step reads seeded or computed
 
 - Build the spectral mix table inside a Web Worker so a large upload never blocks the slider.
 - Brand-specific tube sets measured from real swatches, so "my Winsor & Newton box" is one click.
-- A printable palette card (tube list, top recipes, heatmap thumbnail) as one PNG for the field bag.
 - Shareable plans for uploaded photos, stored as cluster summaries rather than pixels.
 
 ## AI use

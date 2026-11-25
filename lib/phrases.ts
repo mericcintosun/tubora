@@ -1,10 +1,9 @@
 // Painter color phrases: the corpus behind "describe a color, get a recipe".
-// Target state: about 600 rows in English, Turkish and Spanish produced by Adaption Invent
-// with scripts/adaption_invent.py, scored with Adaption's evaluation, and pasted here as
-// `source: "adaption-invent"` rows with their quality score.
-// Current state: the 18 rows in fixtures/phrases.json are hand-written seed samples in the
-// same shape, so the search runs today. They are labelled as samples in the UI and carry no
-// quality score. Edit fixtures/phrases.sample.json, then run `npm run seed`.
+// scripts/adaption_invent.py writes Adaption Invent rows (`source: "adaption-invent"`, ids
+// a0001...) into fixtures/phrases.sample.json next to the 18 hand-written seed rows
+// (`source: "seed-sample"`, ids p01...); `npm run seed` copies that file to fixtures/phrases.json.
+// activePhrases() picks the corpus: the Adaption rows as soon as any exist, the seed rows
+// otherwise. The UI labels which one answered.
 
 import type { RGB } from "./color";
 import phraseRows from "../fixtures/phrases.json";
@@ -18,11 +17,20 @@ export interface PainterPhrase {
   value: "dark" | "mid" | "light";
   chroma: "muted" | "moderate" | "vivid";
   source: "seed-sample" | "adaption-invent";
-  /** Adaption evaluation score (0-1) for generated rows; null for seed samples. */
+  /** Adaption evaluation score for generated rows; null for seed samples or while the evaluation is pending. */
   quality: number | null;
 }
 
-export const PHRASES: PainterPhrase[] = phraseRows as unknown as PainterPhrase[];
+/** Adaption rows when any exist, otherwise the seed rows. Never mixes the two. */
+export function activePhrases(rows: PainterPhrase[]): PainterPhrase[] {
+  const generated = rows.filter((r) => r.source === "adaption-invent");
+  return generated.length > 0 ? generated : rows.filter((r) => r.source !== "adaption-invent");
+}
+
+/** Every row in the fixture, both sources. Use PHRASES for search. */
+export const ALL_PHRASES: PainterPhrase[] = phraseRows as unknown as PainterPhrase[];
+
+export const PHRASES: PainterPhrase[] = activePhrases(ALL_PHRASES);
 
 /** Deterministic fallback when the embedding model cannot load: shared-word overlap. */
 export function keywordSearch(query: string): { phrase: PainterPhrase; score: number } | null {

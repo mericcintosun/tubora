@@ -26,7 +26,7 @@ import {
   type Pixels,
 } from "@/lib/planner";
 import { ENGINE_LINE } from "@/lib/mix/engines";
-import type { MixEngine } from "@/lib/types";
+import type { AdaptionEvaluation, MixEngine } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 type Variant = "full" | "frame";
@@ -48,6 +48,7 @@ export function PackWorkspace({
   initialK,
   initialOwned,
   mixEngine,
+  evaluation = null,
   variant = "full",
 }: {
   initialSceneId: string;
@@ -55,6 +56,8 @@ export function PackWorkspace({
   initialOwned: string[];
   /** Chosen on the server by getAdapter(); arrives here as a plain string. */
   mixEngine: MixEngine;
+  /** Adaption dataset evaluation from getAdapter().getPhraseEvaluation(), shown under Adaption hits. */
+  evaluation?: AdaptionEvaluation | null;
   variant?: Variant;
 }) {
   const [sceneId, setSceneId] = useState(initialSceneId);
@@ -236,7 +239,7 @@ export function PackWorkspace({
         {noTubes ? (
           <WorkspaceEmptyState onRefill={() => setOwned(initialOwned)} />
         ) : (
-        <div className={cn("grid gap-2", frame ? "sm:grid-cols-2 lg:grid-cols-4" : "")}>
+        <div className={cn("grid gap-2", frame ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-4" : "grid-cols-1")}>
           {plan.recipes.slice(0, frame ? 8 : 10).map((r, i) => (
             <div key={i} className="flex items-center gap-3 rounded-2xl border-2 border-border bg-background px-3 py-2">
               <span className="flex shrink-0 -space-x-2">
@@ -244,7 +247,9 @@ export function PackWorkspace({
                 <span className="size-8 rounded-full border-2 border-border" style={{ backgroundColor: rgbCss(r.mix.rgb) }} title="Estimated mix" />
               </span>
               <span className="min-w-0 flex-1 text-sm">
-                <span className="block truncate font-bold">{recipeText(r.mix)}</span>
+                <span className="block truncate font-bold" title={recipeText(r.mix)}>
+                  {recipeText(r.mix)}
+                </span>
                 <span className="text-xs">{Math.round(r.cluster.weight * 100)}% of the picture</span>
               </span>
               <Badge variant={r.error > UNREACHABLE ? "destructive" : r.error > 3 ? "secondary" : "ok"}>{r.error.toFixed(1)}</Badge>
@@ -277,7 +282,7 @@ export function PackWorkspace({
                 })}
               </div>
             </fieldset>
-            <PhraseSearch tubeIdx={plan.selected} mixEngine={mixEngine} />
+            <PhraseSearch tubeIdx={plan.selected} mixEngine={mixEngine} evaluation={evaluation} />
           </>
         )}
       </div>

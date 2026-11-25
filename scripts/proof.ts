@@ -42,6 +42,7 @@ async function main(timeoutMs: number) {
     "demo-step4": notRun("the step 4 planner run did not finish."),
     "demo-path": notRun("the demo path run did not finish."),
     tests: notRun("the test run did not finish."),
+    adaption: notRun("the fixture read did not finish."),
   };
   const guard = setTimeout(() => {
     console.log("proof: time budget used up, writing what is ready");
@@ -224,6 +225,41 @@ async function main(timeoutMs: number) {
   } catch (e) {
     blocks["demo-path"] = notRun(msg(e));
     console.log(`proof: demo-path not run: ${msg(e)}`);
+  }
+
+  // Block 6: the Adaption phrase set, read from the two fixtures only (no network).
+  try {
+    const rows = JSON.parse(readFileSync(join(ROOT, "fixtures", "phrases.sample.json"), "utf8")) as Array<{ source?: string }>;
+    const evaluation = JSON.parse(readFileSync(join(ROOT, "fixtures", "adaption-evaluation.sample.json"), "utf8")) as {
+      status?: string;
+      quality?: { score_before: number; score_after: number; improvement_percent: number } | null;
+      datasetId?: string;
+      generatedAt?: string;
+    };
+    const bySource = new Map<string, number>();
+    for (const r of rows) bySource.set(r.source ?? "unknown", (bySource.get(r.source ?? "unknown") ?? 0) + 1);
+    const adaptionCount = bySource.get("adaption-invent") ?? 0;
+    if (adaptionCount === 0) {
+      blocks.adaption = `Not run in this build: no Adaption rows in fixtures/phrases.sample.json, the corpus is ${rows.length} seed rows.`;
+    } else {
+      const q = evaluation.quality;
+      const sources = [...bySource.entries()].map(([s, n]) => `${s} ${n}`).join(", ");
+      blocks.adaption = [
+        `Rows by source in \`fixtures/phrases.sample.json\`: ${sources}. The phrase box searches the adaption-invent rows.`,
+        ``,
+        `Evaluation status: ${evaluation.status ?? "unknown"}. ${
+          q
+            ? `Score ${q.score_before.toFixed(2)} to ${q.score_after.toFixed(2)} (${q.improvement_percent >= 0 ? "+" : ""}${q.improvement_percent.toFixed(1)}%).`
+            : "No scores yet."
+        }`,
+        ``,
+        `Dataset id: ${evaluation.datasetId ?? "not recorded"}${evaluation.generatedAt ? `, generated ${evaluation.generatedAt}` : ""}.`,
+      ].join("\n");
+    }
+    console.log(`proof: adaption ${adaptionCount} generated rows`);
+  } catch (e) {
+    blocks.adaption = notRun(msg(e));
+    console.log(`proof: adaption not run: ${msg(e)}`);
   }
 
   // Block 5: the test file, run as a child process with what is left of the budget.

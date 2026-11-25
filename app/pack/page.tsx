@@ -44,14 +44,20 @@ export default async function PackPage({ searchParams }: { searchParams: Promise
         </p>
       </div>
 
-      <PackWorkspace initialSceneId={sceneId} initialK={k} initialOwned={SEED.studentSet} mixEngine={adapter.mixEngine} />
+      <PackWorkspace
+        initialSceneId={sceneId}
+        initialK={k}
+        initialOwned={SEED.studentSet}
+        mixEngine={adapter.mixEngine}
+        evaluation={adapter.getPhraseEvaluation()}
+      />
 
       <section className="mt-16" aria-labelledby="saved-title">
         <h2 id="saved-title" className="font-display text-2xl font-semibold">Palettes other painters packed</h2>
         {savedPlans.length === 0 ? (
           <SavedPlansEmptyState />
         ) : (
-          <ul className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <ul className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-4">
             {savedPlans.map((p, i) => (
               <li key={p.id}>
                 <Link

@@ -34,6 +34,16 @@ export default function HowPage() {
   const tubes = SEED.tubes;
   const mixCount = buildMixTable(adapter.mixEngine).length;
   const langs = new Set(phrases.map((p) => p.lang)).size;
+  const evaluation = adapter.getPhraseEvaluation();
+  const adaptionRows = phrases.filter((p) => p.source === "adaption-invent").length;
+  const seedRows = phrases.length - adaptionRows;
+  const q = evaluation.quality;
+  const evaluationText =
+    adaptionRows === 0
+      ? "Adaption run not done in this build: the box searches the seed rows."
+      : q
+        ? `Adaption evaluation: score ${q.score_before.toFixed(2)} to ${q.score_after.toFixed(2)} (${q.improvement_percent >= 0 ? "+" : ""}${q.improvement_percent.toFixed(1)}%)`
+        : "Adaption evaluation pending";
   const engineLine = ENGINE_LINE[adapter.mixEngine];
   const mixBody =
     adapter.mixEngine === "spectral"
@@ -109,11 +119,17 @@ export default function HowPage() {
           {phrases.length === 0 ? (
             <PhrasesEmptyState />
           ) : (
-            <div className="mt-4 flex flex-wrap gap-2">
-              <Badge variant="secondary">{phrases.length} seed rows today</Badge>
-              <Badge variant="outline">{langs} languages</Badge>
-              <Badge variant="default">about 600 rows after the Adaption run</Badge>
-            </div>
+            <>
+              <div className="mt-4 flex flex-wrap gap-2">
+                {adaptionRows > 0 && <Badge variant="ok">{adaptionRows} Adaption Invent rows</Badge>}
+                {seedRows > 0 && <Badge variant="secondary">{seedRows} seed rows</Badge>}
+                <Badge variant="outline">{langs} languages</Badge>
+              </div>
+              <p className="mt-3 max-w-[65ch] break-words text-sm font-bold">
+                {evaluationText}
+                {evaluation.datasetId ? ` · dataset ${evaluation.datasetId}` : ""}
+              </p>
+            </>
           )}
         </div>
       </section>

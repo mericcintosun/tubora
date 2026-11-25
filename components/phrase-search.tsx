@@ -9,7 +9,7 @@ import { rgbCss } from "@/lib/color";
 import { MODEL_LOAD_RETRIES, MODEL_LOAD_TIMEOUT_MS } from "@/lib/config";
 import { PHRASES, keywordSearch, type PainterPhrase } from "@/lib/phrases";
 import { bestMixFor, recipeText } from "@/lib/planner";
-import type { MixEngine } from "@/lib/types";
+import type { AdaptionEvaluation, MixEngine } from "@/lib/types";
 
 const MODEL = "Xenova/paraphrase-multilingual-MiniLM-L12-v2";
 // Typed as string (not a literal) so TypeScript treats the dynamic import as `any`.
@@ -98,8 +98,25 @@ interface Hit {
   engine: "embedding" | "keyword";
 }
 
+/** One line under an Adaption hit: the dataset evaluation, or that it is still pending. */
+function evaluationLine(evaluation: AdaptionEvaluation | null | undefined): string {
+  const q = evaluation?.quality;
+  if (!q) return "Adaption evaluation pending";
+  const sign = q.improvement_percent >= 0 ? "+" : "";
+  return `Adaption evaluation: score ${q.score_before.toFixed(2)} to ${q.score_after.toFixed(2)} (${sign}${q.improvement_percent.toFixed(1)}%)`;
+}
+
 /** "Describe a color" box: multilingual sentence embeddings in the browser, keyword fallback. */
-export function PhraseSearch({ tubeIdx, mixEngine = "km-rgb" }: { tubeIdx: number[]; mixEngine?: MixEngine }) {
+export function PhraseSearch({
+  tubeIdx,
+  mixEngine = "km-rgb",
+  evaluation,
+}: {
+  tubeIdx: number[];
+  mixEngine?: MixEngine;
+  /** Read on the server through getAdapter().getPhraseEvaluation(). */
+  evaluation?: AdaptionEvaluation | null;
+}) {
   const [query, setQuery] = useState("karın üstünde akşam gölgesi");
   const [status, setStatus] = useState<"idle" | "loading" | "ready" | "fallback">("idle");
   const [progress, setProgress] = useState(0);
@@ -156,6 +173,9 @@ export function PhraseSearch({ tubeIdx, mixEngine = "km-rgb" }: { tubeIdx: numbe
         Type it the way you would say it, in English, Turkish or Spanish. Tubora finds the closest painter phrase and mixes
         it from the tubes picked above.
       </p>
+      <p className="mt-1 max-w-[65ch] text-xs">
+        The language model downloads from jsDelivr and Hugging Face; your words never leave this browser.
+      </p>
       <form
         className="mt-3 flex gap-2"
         onSubmit={(e) => {
@@ -199,9 +219,12 @@ export function PhraseSearch({ tubeIdx, mixEngine = "km-rgb" }: { tubeIdx: numbe
             <p className="text-xs">
               Matched by {hit.engine === "embedding" ? `in-browser embeddings (${MODEL.split("/")[1]}), similarity ${hit.score.toFixed(2)}` : "keyword overlap, because the model could not load here"}.
             </p>
+            {hit.phrase.source === "adaption-invent" && <p className="text-xs font-bold">{evaluationLine(evaluation)}</p>}
           </div>
-          {hit.phrase.source === "adaption-invent" && hit.phrase.quality !== null ? (
-            <Badge variant="ok">Adaption quality {hit.phrase.quality.toFixed(2)}</Badge>
+          {hit.phrase.source === "adaption-invent" ? (
+            <Badge variant="ok">
+              {hit.phrase.quality !== null ? `Adaption quality ${hit.phrase.quality.toFixed(2)}` : "Adaption Invent row"}
+            </Badge>
           ) : (
             <Badge variant="outline">seed sample, awaiting Adaption run</Badge>
           )}

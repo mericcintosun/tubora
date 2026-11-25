@@ -65,4 +65,8 @@ export type { PainterPhrase };
 export interface AdaptionEvaluation {
   status: string;
   quality: { score_before: number; score_after: number; improvement_percent: number } | null;
+  /** Written by scripts/adaption_invent.py after a real run. */
+  datasetId?: string;
+  rows?: number;
+  generatedAt?: string;
 }

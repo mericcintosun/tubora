@@ -1,14 +1,15 @@
 // The data seam. Every server page and API route reads through getAdapter(), the only selector.
 // ADAPTER_MODE=fake (the default) builds plans with the per-channel Kubelka-Munk estimate
 // (km-rgb). ADAPTER_MODE=real (lib/adapter.real.ts) builds them with spectral.js reflectance
-// mixing. Phrase rows and the evaluation stay on fixtures in both modes until Phase 4.
+// mixing. Phrase rows and the Adaption evaluation come from the fixtures that
+// scripts/adaption_invent.py writes, in both modes; activePhrases() prefers Adaption rows.
 // The client workspace runs the same planner in the browser with the engine passed down as a prop.
 
 import evaluationSample from "../fixtures/adaption-evaluation.sample.json";
 import phraseFixture from "../fixtures/phrases.json";
 import { adapterMode, CORE_LOG_PREFIX } from "./config";
 import { TUBES, sceneById, type SavedPlan } from "./data";
-import type { PainterPhrase } from "./phrases";
+import { activePhrases, type PainterPhrase } from "./phrases";
 import { CLUSTERS, analyze, planPalette, recipeText, renderScene, resolvePlanId } from "./planner";
 import { realAdapter } from "./adapter.real";
 import { SEED } from "./seed";
@@ -66,7 +67,8 @@ export const fakeAdapter: TuboraAdapter = {
   listScenes: () => SEED.scenes.map((s) => ({ id: s.id, title: s.title, challenge: s.challenge })),
   listSavedPlans: () => SEED.savedPlans,
   getPlan: (id) => buildPlan(id, "km-rgb"),
-  listPhrases: () => phraseFixture as unknown as PainterPhrase[],
+  // Adaption rows when the fixture holds any, otherwise the 18 seed rows.
+  listPhrases: () => activePhrases(phraseFixture as unknown as PainterPhrase[]),
   getPhraseEvaluation: () => evaluationSample as AdaptionEvaluation,
 };
 
