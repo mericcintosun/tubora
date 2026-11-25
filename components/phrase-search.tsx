@@ -10,6 +10,8 @@ import { PHRASES, keywordSearch, type PainterPhrase } from "@/lib/phrases";
 import { bestMixFor, recipeText } from "@/lib/planner";
 
 const MODEL = "Xenova/paraphrase-multilingual-MiniLM-L12-v2";
+// Typed as string (not a literal) so TypeScript treats the dynamic import as `any`.
+const TRANSFORMERS_URL: string = "https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1";
 
 type Extractor = (
   input: string | string[],
@@ -23,7 +25,9 @@ let phraseVectors: Float32Array[] | null = null;
 async function loadExtractor(onProgress: (pct: number) => void): Promise<Extractor> {
   if (!extractorPromise) {
     extractorPromise = (async () => {
-      const mod = await import("@huggingface/transformers");
+      // Loaded from the CDN at runtime so the bundle does not depend on the npm package.
+      // If it cannot load, run() falls back to keyword search.
+      const mod = await import(/* webpackIgnore: true */ TRANSFORMERS_URL);
       const make = mod.pipeline as unknown as (task: string, model: string, opts: object) => Promise<Extractor>;
       return make("feature-extraction", MODEL, {
         progress_callback: (p: { status?: string; progress?: number }) => {
