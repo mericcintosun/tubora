@@ -74,10 +74,10 @@ export default async function PalettePage({ params }: { params: Params }) {
         <p className="mt-4 max-w-[65ch] text-lg leading-relaxed">
           {pct === 0
             ? `Every part of this picture is within reach. Average error ${plan.avgError.toFixed(1)}.`
-            : `These ${plan.selected.length} tubes mix ${100 - pct}% of the picture closely (average error ${plan.avgError.toFixed(1)}). The red areas below (${pct}%) are where ${
+            : `These ${plan.selected.length} tubes mix ${100 - pct}% of the picture closely (average error ${plan.avgError.toFixed(1)}). ${
                 suggested && plan.suggestion
-                  ? `one more tube helps: adding ${suggested.name} brings the average error to ${plan.suggestion.avgErrorAfter.toFixed(1)}.`
-                  : "you will want to test a swatch before committing the paint."
+                  ? `Adding ${suggested.name} would bring the average error to ${plan.suggestion.avgErrorAfter.toFixed(1)}; the tinted areas below (${pct}%) show where it helps.`
+                  : `The tinted areas below (${pct}%) are worth a test swatch before you commit the paint.`
               }`}
         </p>
         <p className="mt-3">

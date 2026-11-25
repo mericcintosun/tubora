@@ -166,10 +166,10 @@ function drawCard(p: CardProps): HTMLCanvasElement {
   const capW = W - M - capX;
   ctx.fillStyle = INK;
   ctx.font = `600 52px ${display}`;
-  const capLines = wrap(ctx, `${pct}% out of reach, average error ${p.avgError.toFixed(1)}`, capW, 4);
+  const capLines = wrap(ctx, `${100 - pct}% mixed closely, average error ${p.avgError.toFixed(1)}`, capW, 4);
   capLines.forEach((l, i) => ctx.fillText(l, capX, y + 60 + i * 60));
   ctx.font = `600 24px ${body}`;
-  wrap(ctx, "Red on the picture is what these tubes cannot mix.", capW, 3).forEach((l, i) =>
+  wrap(ctx, "Tinted areas on the picture are worth a test swatch first.", capW, 3).forEach((l, i) =>
     ctx.fillText(l, capX, y + 60 + capLines.length * 60 + 20 + i * 32)
   );
   y += thumbH + 60;

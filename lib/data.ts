@@ -70,7 +70,7 @@ export const SCENES: Scene[] = [
     id: "marmara-dusk",
     title: "Dusk over the Sea of Marmara",
     place: "Moda pier, Istanbul",
-    challenge: "A hot orange sky band that most 3-tube palettes cannot reach.",
+    challenge: "A hot orange sky band that needs yellow and red near full strength.",
     layers: [
       { kind: "vgrad", y0: 0, y1: 0.3, top: [92, 58, 112], bottom: [214, 96, 70] },
       { kind: "vgrad", y0: 0.3, y1: 0.58, top: [236, 118, 34], bottom: [250, 186, 60] },
