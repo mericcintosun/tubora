@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Flame } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { sceneById } from "@/lib/data";
-import { UNREACHABLE, analyze, planErrors, planPalette, renderScene, type Pixels } from "@/lib/planner";
+import { CLUSTERS, UNREACHABLE, analyze, planErrors, planPalette, renderScene, type Pixels } from "@/lib/planner";
 import type { MixEngine } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -12,6 +12,60 @@ function tokenRgb(name: string): [number, number, number] {
   const raw = getComputedStyle(document.documentElement).getPropertyValue(name).trim().replace("#", "");
   const n = parseInt(raw.length === 3 ? raw.replace(/./g, (c) => c + c) : raw, 16);
   return Number.isNaN(n) ? [200, 40, 30] : [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+
+/**
+ * RGBA bytes of the reference, and when `showHeat` is on, every pixel whose CIEDE2000 error is
+ * above the unreachable line washed in `bad` (stronger the further off) while reachable pixels
+ * fade toward grey. Shared by HeatmapCanvas and the palette card thumbnail.
+ */
+export function heatmapRgba(
+  pixels: Pixels,
+  errors: Float32Array | null,
+  showHeat: boolean,
+  bad: [number, number, number] = tokenRgb("--bad")
+) {
+  const { width, height, data } = pixels;
+  const out = new Uint8ClampedArray(width * height * 4);
+  for (let i = 0; i < width * height; i++) {
+    let r = data[i * 3];
+    let g = data[i * 3 + 1];
+    let b = data[i * 3 + 2];
+    if (showHeat && errors) {
+      const e = errors[i];
+      if (e > UNREACHABLE) {
+        const t = Math.min(0.85, 0.45 + (e - UNREACHABLE) / 20);
+        r = r + (bad[0] - r) * t;
+        g = g + (bad[1] - g) * t;
+        b = b + (bad[2] - b) * t;
+      } else {
+        // reachable pixels fade toward grey so the red reads at a glance
+        const y = 0.3 * r + 0.59 * g + 0.11 * b;
+        r = r + (y - r) * 0.55;
+        g = g + (y - g) * 0.55;
+        b = b + (y - b) * 0.55;
+      }
+    }
+    out[i * 4] = r;
+    out[i * 4 + 1] = g;
+    out[i * 4 + 2] = b;
+    out[i * 4 + 3] = 255;
+  }
+  return out;
+}
+
+/** The scene pixels and per-pixel errors for one plan, the same run PlanPicture draws. */
+export function planHeatmap(
+  sceneId: string,
+  owned: string[],
+  k: number,
+  mixEngine: MixEngine
+): { pixels: Pixels; errors: Float32Array } | null {
+  const scene = sceneById(sceneId);
+  if (!scene) return null;
+  const pixels = renderScene(scene);
+  const a = analyze(pixels, CLUSTERS, mixEngine);
+  return { pixels, errors: planErrors(a, planPalette(a, owned, k)) };
 }
 
 /**
@@ -36,36 +90,10 @@ export function HeatmapCanvas({
     const canvas = ref.current;
     const ctx = canvas?.getContext("2d");
     if (!canvas || !ctx) return;
-    const { width, height, data } = pixels;
+    const { width, height } = pixels;
     canvas.width = width;
     canvas.height = height;
-    const img = ctx.createImageData(width, height);
-    const bad = tokenRgb("--bad");
-    for (let i = 0; i < width * height; i++) {
-      let r = data[i * 3];
-      let g = data[i * 3 + 1];
-      let b = data[i * 3 + 2];
-      if (showHeat && errors) {
-        const e = errors[i];
-        if (e > UNREACHABLE) {
-          const t = Math.min(0.85, 0.45 + (e - UNREACHABLE) / 20);
-          r = r + (bad[0] - r) * t;
-          g = g + (bad[1] - g) * t;
-          b = b + (bad[2] - b) * t;
-        } else {
-          // reachable pixels fade toward grey so the red reads at a glance
-          const y = 0.3 * r + 0.59 * g + 0.11 * b;
-          r = r + (y - r) * 0.55;
-          g = g + (y - g) * 0.55;
-          b = b + (y - b) * 0.55;
-        }
-      }
-      img.data[i * 4] = r;
-      img.data[i * 4 + 1] = g;
-      img.data[i * 4 + 2] = b;
-      img.data[i * 4 + 3] = 255;
-    }
-    ctx.putImageData(img, 0, 0);
+    ctx.putImageData(new ImageData(heatmapRgba(pixels, errors, showHeat), width, height), 0, 0);
   }, [pixels, errors, showHeat]);
 
   return (

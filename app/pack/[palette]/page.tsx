@@ -5,6 +5,7 @@ import { cache } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { PlanPicture } from "@/components/heatmap-canvas";
+import { PaletteCard } from "@/components/palette-card";
 import { RouteEmptyState } from "@/components/route-states";
 import { ShareLink } from "@/components/share-link";
 import { getAdapter } from "@/lib/adapter";
@@ -74,8 +75,19 @@ export default async function PalettePage({ params }: { params: Params }) {
           </Badge>
         </p>
         {saved && <p className="mt-2 max-w-[65ch] italic">“{saved.note}”</p>}
-        <div className="mt-6">
+        <div className="mt-6 flex flex-wrap items-start gap-2">
           <ShareLink path={`/pack/${palette}`} />
+          <PaletteCard
+            paletteId={palette}
+            sceneId={plan.sceneId}
+            owned={plan.owned}
+            k={plan.k}
+            mixEngine={mixEngine}
+            selected={plan.selected}
+            recipes={plan.recipes}
+            avgError={plan.avgError}
+            unreachableShare={plan.unreachableShare}
+          />
         </div>
       </div>
 
@@ -134,7 +146,9 @@ export default async function PalettePage({ params }: { params: Params }) {
                         <span className="size-8 rounded-full border-2 border-border" style={{ backgroundColor: rgbCss(r.mixRgb) }} />
                       </span>
                       <span className="min-w-0 flex-1 text-sm">
-                        <span className="block font-bold">{r.recipe}</span>
+                        <span className="block break-words font-bold" title={r.recipe}>
+                          {r.recipe}
+                        </span>
                         <span className="text-xs">{Math.round(r.weight * 100)}% of the picture</span>
                       </span>
                       <Badge variant={r.error > UNREACHABLE ? "destructive" : r.error > 3 ? "secondary" : "ok"}>
