@@ -255,6 +255,27 @@ export function planPalette(a: Analysis, ownedIds: string[], k: number): Palette
     mask |= 1 << bestT;
     err = bestE;
   }
+  // Greedy adds the best single tube each step, so an early pick can block a better set (for the
+  // Marmara dusk it kept Ivory Black, which the painter owns, out of the bag and then suggested it
+  // as the "missing piece"). One-for-one swaps against the owned tubes until nothing improves.
+  for (let pass = 0; pass < 8; pass++) {
+    let improved = false;
+    for (let s = 0; s < selected.length; s++) {
+      const without = mask & ~(1 << selected[s]);
+      for (const t of owned) {
+        if (mask & (1 << t)) continue;
+        const e = bestPerCluster(a, without | (1 << t)).err;
+        if (e < err - 1e-6) {
+          mask = without | (1 << t);
+          selected[s] = t;
+          err = e;
+          improved = true;
+          break;
+        }
+      }
+    }
+    if (!improved) break;
+  }
   const { idx } = bestPerCluster(a, mask);
   const M = a.mixes.length;
   const recipes: ClusterRecipe[] = a.clusters

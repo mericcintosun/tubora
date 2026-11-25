@@ -384,5 +384,11 @@ Fix: each pixel now takes its group's error against the best mix (`a.deltas`), s
 
 Re-check of the same crawl (screenshots `qa-4.png`, `qa-5.png`): the live pages still show the old sentence ("44% of the picture is out of reach with this palette"), which no longer exists anywhere in the repo. So the crawl ran on a deploy built before `63608ec`; the fix needs a redeploy, not more code. With the group-based metric the proof gives 42.9% at 4 tubes and 88.6% at 3 tubes. Those are real results: the recipe badges show the dark sea and sky groups above 6, and the red spread when you drop to 3 tubes is the demo's point. The page leads with what the tubes reach and names the missing tube, so the share stays honest and no number is hidden.
 
+### QA round 1 re-crawl: same three pages, same old sentence
+
+The re-crawl again shows "44% / 88% of the picture is out of reach with this palette", a sentence that is not in the repo (`app/pack/[palette]/page.tsx` leads with "These N tubes mix X% of the picture closely"). The live deploy still predates `63608ec`. The runner should confirm that the redeploy after this pass serves the current `main` (the result page heading copy is the check).
+
+While tracing the 44% I also found a real planner defect behind it. The live page offers "Missing piece: adding Ivory Black" even though Ivory Black is in the student set the plan was built from. `planPalette` picked tubes one at a time, so an early pick could keep a better owned tube out of the bag. That left the dark sea groups above 6 and inflated the red share. Fix: after the greedy pick, `lib/planner.ts` swaps one tube at a time against the other owned tubes until no swap lowers the weighted error. Error can only go down, and the k=3 and k=4 shares drop where a better owned set exists. The proof blocks (README, DEMO, SUBMISSION) regenerate with the new figures on the next `npm run proof`. The 42.9% / 88.6% above come from greedy only.
+
 ### QA: external findings
 None this round.
