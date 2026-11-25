@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "seed": "node scripts/seed.mjs"
+    "seed": "node scripts/seed.mjs",
+    "test": "tsx --test tests/*.test.ts",
+    "proof": "tsx scripts/proof.ts"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.1.2",
@@ -16,7 +18,9 @@
     "next": "^15.4.5",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "tailwind-merge": "^3.0.1"
+    "spectral.js": "^3.0.0",
+    "tailwind-merge": "^3.0.1",
+    "zod": "^3.25.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.11",
@@ -24,6 +28,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "tailwindcss": "^4.1.11",
+    "tsx": "^4.19.0",
     "typescript": "^5"
   }
 }

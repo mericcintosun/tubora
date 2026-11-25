@@ -1,12 +1,16 @@
 // Shared, JSON-safe contracts between the adapter, the API routes and the server pages.
 
+import type { ErrorCode } from "./errors";
 import type { PainterPhrase } from "./phrases";
 
 export type AdapterMode = "fake" | "real";
 
+/** "km-rgb": per-channel Kubelka-Munk estimate (fake). "spectral": spectral.js reflectance mixing (real). */
+export type MixEngine = "km-rgb" | "spectral";
+
 export type ApiResponse<T> =
   | { ok: true; mode: AdapterMode; data: T }
-  | { ok: false; mode: AdapterMode; error: string };
+  | { ok: false; mode: AdapterMode; error: ErrorCode; hint: string };
 
 export interface SceneSummary {
   id: string;
@@ -51,6 +55,8 @@ export interface PlanSummary {
   unreachableShare: number;
   suggestion: { tubeId: string; avgErrorAfter: number } | null;
   saved: PlanSaved | null;
+  /** Which mixing engine built the mix table behind these recipes. */
+  mixEngine: MixEngine;
 }
 
 export type PhraseRow = PainterPhrase;
