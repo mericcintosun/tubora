@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const LINKS = [
@@ -37,17 +38,19 @@ export function MobileNav() {
 
   return (
     <div className="md:hidden">
-      <button
+      <Button
         ref={buttonRef}
         type="button"
+        variant="outline"
+        size="icon"
         aria-expanded={open}
         aria-controls={panelId}
         aria-label="Menu"
         onClick={() => setOpen((v) => !v)}
-        className="inline-flex h-11 w-11 items-center justify-center rounded-full border-2 border-border bg-background shadow-sticker focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring/40 active:translate-y-[3px] active:shadow-none"
+        className="[&_svg]:size-5"
       >
-        {open ? <X className="size-5" aria-hidden /> : <Menu className="size-5" aria-hidden />}
-      </button>
+        {open ? <X aria-hidden /> : <Menu aria-hidden />}
+      </Button>
       <div
         id={panelId}
         hidden={!open}

@@ -169,7 +169,7 @@ export function PackWorkspace({
 
       {/* controls column (stacks under the picture in the landing frame) */}
       <div className="space-y-5">
-        <div className="rounded-2xl border-2 border-border bg-card p-5 shadow-sticker">
+        <Card className="p-5">
           <div className="flex items-baseline justify-between gap-3">
             <label htmlFor={`k-${variant}`} className="font-display text-xl font-semibold">
               Tubes to carry: {k}
@@ -234,14 +234,14 @@ export function PackWorkspace({
               <ShareLink path={`/pack/${encodePlanId({ sceneId, k, owned })}`} openLabel={frame ? undefined : "Open as a page"} />
             </div>
           )}
-        </div>
+        </Card>
 
         {noTubes ? (
           <WorkspaceEmptyState onRefill={() => setOwned(initialOwned)} />
         ) : (
         <div className={cn("grid gap-2", frame ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-4" : "grid-cols-1")}>
           {plan.recipes.slice(0, frame ? 8 : 10).map((r, i) => (
-            <div key={i} className="flex items-center gap-3 rounded-2xl border-2 border-border bg-background px-3 py-2">
+            <Card key={i} className="flex items-center gap-3 bg-background px-3 py-2 shadow-none">
               <span className="flex shrink-0 -space-x-2">
                 <span className="size-8 rounded-full border-2 border-border" style={{ backgroundColor: rgbCss(r.cluster.rgb) }} title="Color in the picture" />
                 <span className="size-8 rounded-full border-2 border-border" style={{ backgroundColor: rgbCss(r.mix.rgb) }} title="Estimated mix" />
@@ -253,7 +253,7 @@ export function PackWorkspace({
                 <span className="text-xs">{Math.round(r.cluster.weight * 100)}% of the picture</span>
               </span>
               <Badge variant={r.error > UNREACHABLE ? "destructive" : r.error > 3 ? "secondary" : "ok"}>{r.error.toFixed(1)}</Badge>
-            </div>
+            </Card>
           ))}
         </div>
         )}

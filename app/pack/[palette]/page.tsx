@@ -4,6 +4,8 @@ import { notFound } from "next/navigation";
 import { cache } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { SceneSlot } from "@/components/scene-slot";
 import { PlanPicture } from "@/components/heatmap-canvas";
 import { PaletteCard } from "@/components/palette-card";
 import { RouteEmptyState } from "@/components/route-states";
@@ -56,12 +58,12 @@ export default async function PalettePage({ params }: { params: Params }) {
   const saved = plan.saved;
 
   return (
-    <article className="mx-auto max-w-6xl px-4 py-10">
-      <div className="tubora-enter max-w-4xl">
+    <article className="mx-auto max-w-6xl px-4 pb-16 pt-10 sm:pb-24">
+      <div className="tubora-enter max-w-5xl">
         <p className="text-sm font-bold">
           {saved ? `Packed by ${saved.painter}, ${saved.city} · ${saved.savedAt}` : "Shared from the Tubora workspace"}
         </p>
-        <h1 className="mt-2 font-display text-4xl font-semibold leading-tight sm:text-6xl">
+        <h1 className="mt-2 break-words font-display text-[clamp(3.5rem,9vw,8rem)] font-semibold leading-[0.92] tracking-tight">
           {plan.selected.length} tubes for {scene.title.toLowerCase()}
         </h1>
         <p className="mt-4 max-w-[65ch] text-lg leading-relaxed">
@@ -103,7 +105,7 @@ export default async function PalettePage({ params }: { params: Params }) {
         </div>
         <div className="tubora-enter-later space-y-6">
           <section aria-labelledby="bag-title">
-            <h2 id="bag-title" className="font-display text-2xl font-semibold">In the bag</h2>
+            <h2 id="bag-title" className="font-display text-3xl font-semibold sm:text-5xl">In the bag</h2>
             <ol className="mt-3 flex flex-wrap gap-2">
               {plan.selected.map((id, i) => {
                 const tube = tubeOf(id);
@@ -121,14 +123,16 @@ export default async function PalettePage({ params }: { params: Params }) {
               })}
             </ol>
             {suggested && plan.suggestion && (
-              <p className="mt-4 rounded-2xl border-2 border-border bg-background p-4 text-sm">
-                <strong>Missing piece:</strong> adding {suggested.name} would bring the average error down to{" "}
-                {plan.suggestion.avgErrorAfter.toFixed(1)}.
-              </p>
+              <Card className="mt-4 bg-background p-4 text-sm">
+                <p>
+                  <strong>Missing piece:</strong> adding {suggested.name} would bring the average error down to{" "}
+                  {plan.suggestion.avgErrorAfter.toFixed(1)}.
+                </p>
+              </Card>
             )}
           </section>
           <section aria-labelledby="recipes-title">
-            <h2 id="recipes-title" className="font-display text-2xl font-semibold">Recipes, biggest areas first</h2>
+            <h2 id="recipes-title" className="font-display text-3xl font-semibold sm:text-5xl">Recipes, biggest areas first</h2>
             {plan.recipes.length === 0 ? (
               <RecipesEmptyState
                 title="No recipes for this plan yet"
@@ -140,7 +144,8 @@ export default async function PalettePage({ params }: { params: Params }) {
               <div className="overflow-x-auto">
                 <ul className="mt-3 space-y-2">
                   {plan.recipes.slice(0, 10).map((r, i) => (
-                    <li key={i} className="flex items-center gap-3 rounded-2xl border-2 border-border bg-background px-3 py-2">
+                    <li key={i}>
+                      <Card className="flex items-center gap-3 bg-background px-3 py-2 shadow-none">
                       <span className="flex shrink-0 -space-x-2">
                         <span className="size-8 rounded-full border-2 border-border" style={{ backgroundColor: rgbCss(r.clusterRgb) }} />
                         <span className="size-8 rounded-full border-2 border-border" style={{ backgroundColor: rgbCss(r.mixRgb) }} />
@@ -154,6 +159,7 @@ export default async function PalettePage({ params }: { params: Params }) {
                       <Badge variant={r.error > UNREACHABLE ? "destructive" : r.error > 3 ? "secondary" : "ok"}>
                         {r.error.toFixed(1)}
                       </Badge>
+                      </Card>
                     </li>
                   ))}
                 </ul>
@@ -164,6 +170,16 @@ export default async function PalettePage({ params }: { params: Params }) {
             <Link href={`/pack?scene=${scene.id}&k=${plan.k}`}>Try a different tube count</Link>
           </Button>
         </div>
+      </div>
+
+      <div className="mt-16 sm:mt-24">
+        <SceneSlot
+          n={5}
+          alt="A palette card with four tube swatches and recipe rows, clipped to a wooden field easel by a mustard bulldog clip"
+          width={1200}
+          height={400}
+          className="-rotate-1 rounded-3xl border-2 border-border shadow-sticker-lg"
+        />
       </div>
     </article>
   );
