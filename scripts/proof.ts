@@ -1,13 +1,15 @@
-// npm run proof: measures the two mixing engines and rewrites the PROOF blocks in README.md
-// (and SUBMISSION.md if it exists). Never throws, always exits 0, stops within PROOF_TIMEOUT_MS.
-// Every block it cannot fill says "Not run in this build: <reason>".
+// npm run proof: measures the two mixing engines and rewrites the PROOF blocks in README.md,
+// DEMO.md (and SUBMISSION.md if it exists). Never throws, always exits 0, stops within
+// PROOF_TIMEOUT_MS. Every block it cannot fill says "Not run in this build: <reason>".
+// DEMO.md step 4 is written here from the spectral engine, so no tube name is hard-coded.
 
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 const ROOT = process.cwd();
-const TARGETS = ["README.md", "SUBMISSION.md"].map((f) => join(ROOT, f)).filter((f) => existsSync(f));
+const TARGETS = ["README.md", "DEMO.md", "SUBMISSION.md"].map((f) => join(ROOT, f)).filter((f) => existsSync(f));
+const FIVE_SECONDS_MS = 5000;
 const FALLBACK_TIMEOUT_MS = 90000;
 
 type Blocks = Record<string, string>;
@@ -37,6 +39,8 @@ async function main(timeoutMs: number) {
   const blocks: Blocks = {
     "mix-engine": notRun("the engine measurement did not finish."),
     "wow-numbers": notRun("the planner run did not finish."),
+    "demo-step4": notRun("the step 4 planner run did not finish."),
+    "demo-path": notRun("the demo path run did not finish."),
     tests: notRun("the test run did not finish."),
   };
   const guard = setTimeout(() => {
@@ -118,7 +122,111 @@ async function main(timeoutMs: number) {
     console.log(`proof: wow-numbers not run: ${msg(e)}`);
   }
 
-  // Block 3: the test file, run as a child process with what is left of the budget.
+  // Block 3: DEMO.md step 4, the real engine at the default count and one tube fewer.
+  try {
+    const data = await import("../lib/data");
+    const planner = await import("../lib/planner");
+    const { SEED } = await import("../lib/seed");
+    const scene = data.sceneById("marmara-dusk");
+    if (!scene) throw new Error("scene marmara-dusk is missing");
+    const from = SEED.defaultK;
+    const to = SEED.defaultK - 1;
+    const a = planner.analyze(planner.renderScene(scene), planner.CLUSTERS, "spectral");
+    const before = planner.planPalette(a, data.STUDENT_SET, from);
+    const after = planner.planPalette(a, data.STUDENT_SET, to);
+    const pct = (share: number) => `${(share * 100).toFixed(1)}%`;
+    const suggestion = after.suggestion
+      ? `The planner suggests ${data.TUBES[after.suggestion.tube].name}: error drops to ${after.suggestion.avgError.toFixed(1)}.`
+      : "The planner makes no suggestion at this count.";
+    blocks["demo-step4"] = `Slide from ${from} to ${to}: average error ${before.avgError.toFixed(1)} to ${after.avgError.toFixed(1)}, out of reach ${pct(before.unreachableShare)} to ${pct(after.unreachableShare)}. ${suggestion}`;
+    console.log(`proof: demo-step4 ok (${after.suggestion ? data.TUBES[after.suggestion.tube].name : "no suggestion"})`);
+  } catch (e) {
+    blocks["demo-step4"] = notRun(msg(e));
+    console.log(`proof: demo-step4 not run: ${msg(e)}`);
+  }
+
+  // Block 4: every DEMO step that computes something, timed on the real engine.
+  try {
+    const data = await import("../lib/data");
+    const planner = await import("../lib/planner");
+    const phrases = await import("../lib/phrases");
+    const adapterMod = await import("../lib/adapter");
+    const { SEED } = await import("../lib/seed");
+    const scene = data.sceneById("marmara-dusk");
+    if (!scene) throw new Error("scene marmara-dusk is missing");
+    const pct = (share: number) => `${(share * 100).toFixed(1)}%`;
+    const rows: string[] = [];
+    const row = (step: string, file: string, engine: string, result: string, ms: number) => {
+      const flag = ms > FIVE_SECONDS_MS ? " (over the 5 second rule)" : "";
+      rows.push(`| ${step} | \`${file}\` | ${engine} | ${result} | ${ms.toFixed(0)}${flag} |`);
+    };
+
+    let t0 = now();
+    const a = planner.analyze(planner.renderScene(scene), planner.CLUSTERS, "spectral");
+    row("2", "components/pack-workspace.tsx", "spectral", `${a.clusters.length} color groups, ${a.mixes.length} mixes`, now() - t0);
+
+    t0 = now();
+    const five = planner.planPalette(a, data.STUDENT_SET, 5);
+    row(
+      "3",
+      "components/pack-workspace.tsx",
+      "spectral",
+      `${five.selected.length} tubes, average error ${five.avgError.toFixed(1)}, ${pct(five.unreachableShare)} out of reach`,
+      now() - t0
+    );
+
+    t0 = now();
+    const k3 = SEED.defaultK - 1;
+    const three = planner.planPalette(a, data.STUDENT_SET, k3);
+    const s = three.suggestion
+      ? `suggests ${data.TUBES[three.suggestion.tube].name}, error drops to ${three.suggestion.avgError.toFixed(1)}`
+      : "no suggestion at this count";
+    row("4", "components/pack-workspace.tsx", "spectral", `k=${k3}: average error ${three.avgError.toFixed(1)}, ${pct(three.unreachableShare)} out of reach, ${s}`, now() - t0);
+
+    t0 = now();
+    const query = "karın üstünde akşam gölgesi";
+    const hit = phrases.keywordSearch(query);
+    const mix = hit ? planner.bestMixFor(hit.phrase.rgb, five.selected, "spectral") : null;
+    row(
+      "5",
+      "components/phrase-search.tsx",
+      "keyword",
+      hit
+        ? `"${hit.phrase.text}" (score ${hit.score.toFixed(2)})${mix ? `, mix ${planner.recipeText(mix.mix)}` : ""}`
+        : "no keyword hit",
+      now() - t0
+    );
+
+    t0 = now();
+    const shared = adapterMod.buildPlan("marmara-dusk-four-tubes", "spectral");
+    row(
+      "6",
+      "app/pack/[palette]/page.tsx",
+      shared ? shared.mixEngine : "spectral",
+      shared ? `${shared.selected.length} tubes, ${shared.recipes.length} recipes, average error ${shared.avgError.toFixed(1)}` : "plan did not resolve",
+      now() - t0
+    );
+
+    const sweep = [2, 3, 4, 5, 6, 7]
+      .map((k) => `k=${k} ${pct(planner.planPalette(a, data.STUDENT_SET, k).unreachableShare)}`)
+      .join(", ");
+
+    blocks["demo-path"] = [
+      `The DEMO.md steps on the spectral engine, Marmara dusk, 12-tube student set. Step 5 uses the keyword matcher because the embedding model runs only in the browser.`,
+      ``,
+      `| Step | File | Engine | Result | ms |`,
+      `| --- | --- | --- | --- | --- |`,
+      ...rows,
+      ``,
+      `Out of reach by tube count (spectral): ${sweep}.`,
+    ].join("\n");
+    console.log(`proof: demo-path ok (${rows.length} rows)`);
+  } catch (e) {
+    blocks["demo-path"] = notRun(msg(e));
+    console.log(`proof: demo-path not run: ${msg(e)}`);
+  }
+
+  // Block 5: the test file, run as a child process with what is left of the budget.
   try {
     const left = Math.max(1000, deadline - Date.now() - 2000);
     const r = spawnSync("npx", ["tsx", "--test", "tests/mix.test.ts"], {

@@ -19,7 +19,7 @@ Tubora treats palette packing as an optimization problem over the entire referen
 3. **Pick.** A greedy pass adds whichever owned tube cuts the picture's weighted CIEDE2000 error the most, until the bag holds `k` tubes.
 4. **Show the gap.** Every pixel is compared with the best mix its group can reach. Anything more than 6 CIEDE2000 units off turns red. The same pass names the tube that would help most if you made room for it.
 
-The demo moment: on the Marmara sunset with a 12-tube student set, slide from 4 tubes to 3 and the orange band of sky lights up red. Click "Add Cadmium Orange" and it goes away.
+The demo moment: on the Marmara sunset with a 12-tube student set, slide from 4 tubes to 3 and the red spreads across the sunset. Click the planner's own "Add <tube>" suggestion and the error comes back down. The tube it names comes from the live engine; `npm run proof` writes it into `DEMO.md` step 4.
 
 Every plan has its own URL (`/pack/marmara-dusk.k4.<owned-mask>` or a saved slug like `/pack/marmara-dusk-four-tubes`) with a copy-link button.
 
@@ -39,8 +39,8 @@ Ultramarine Blue and Cadmium Yellow Light, 1:1. Hue is the OKLab hue angle (gree
 
 | Engine | Mix | Hue | Mixes in table | Table build (ms) |
 | --- | --- | --- | --- | --- |
-| km-rgb | rgb(47, 54, 7) | 118° | 6216 | 60 |
-| spectral | rgb(119, 146, 61) | 124° | 6216 | 188 |
+| km-rgb | rgb(47, 54, 7) | 118° | 6216 | 41 |
+| spectral | rgb(119, 146, 61) | 124° | 6216 | 130 |
 
 spectral.js answered every spectral mix in this run.
 <!-- PROOF:END mix-engine -->
@@ -59,6 +59,22 @@ Dusk over the Sea of Marmara, 12-tube student set.
 | spectral | 4 | 5.20 | 43.8% | Ivory Black, error drops to 4.0 |
 | spectral | 3 | 9.29 | 87.6% | Quinacridone Rose, error drops to 5.2 |
 <!-- PROOF:END wow-numbers -->
+
+The six demo steps on the real engine, timed (`npm run proof` fills this in):
+
+<!-- PROOF:BEGIN demo-path -->
+The DEMO.md steps on the spectral engine, Marmara dusk, 12-tube student set. Step 5 uses the keyword matcher because the embedding model runs only in the browser.
+
+| Step | File | Engine | Result | ms |
+| --- | --- | --- | --- | --- |
+| 2 | `components/pack-workspace.tsx` | spectral | 24 color groups, 6216 mixes | 303 |
+| 3 | `components/pack-workspace.tsx` | spectral | 5 tubes, average error 4.0, 24.3% out of reach | 50 |
+| 4 | `components/pack-workspace.tsx` | spectral | k=3: average error 9.3, 87.6% out of reach, suggests Quinacridone Rose, error drops to 5.2 | 43 |
+| 5 | `components/phrase-search.tsx` | keyword | "karın üstünde akşam gölgesi" (score 1.00), mix Cad Yellow 1 : Quin Rose 2 : Ultramarine 3 | 3 |
+| 6 | `app/pack/[palette]/page.tsx` | spectral | 4 tubes, 24 recipes, average error 5.2 | 327 |
+
+Out of reach by tube count (spectral): k=2 98.2%, k=3 87.6%, k=4 43.8%, k=5 24.3%, k=6 13.9%, k=7 13.2%.
+<!-- PROOF:END demo-path -->
 
 Tests:
 
@@ -107,6 +123,16 @@ ADAPTION_API_KEY=your-key python scripts/adaption_invent.py
 ```
 
 See `.env.example`. Without a key the script writes the seed sample rows so the rest of the pipeline still runs.
+
+## Demo reset
+
+```bash
+npm run demo:reset
+```
+
+`scripts/demo-reset.ts` puts the demo back at its start state: it rewrites `fixtures/phrases.json` from `fixtures/phrases.sample.json` (the same sort and layout as `npm run seed`), checks that the sunset scene exists, that every saved plan resolves on the spectral engine with at least one recipe, and that "karın üstünde akşam gölgesi" still finds a phrase. It prints one fingerprint line (the tubes and average error of every saved plan), so runs can be compared by eye, and exits 1 if a check fails.
+
+There is no database and nothing to migrate: every step reads seeded or computed data, share links carry the whole plan in the URL, and uploads stay in the browser. There is no on-chain state to reset either.
 
 ## Honest limits
 
