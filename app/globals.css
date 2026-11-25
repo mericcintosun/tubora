@@ -1,31 +1,33 @@
 @import "tailwindcss";
 
-/* shadcn-style design tokens. The ONLY place colors live: restyle a project by
-   editing these variables from IDENTITY.md; components never carry hex.
-   TEMPLATE placeholder palette: warm neutral, deliberately NOT the navy ground +
-   teal accent the scaffold rules ban, so a token the scaffold forgets to
-   rewrite cannot reintroduce that look. Every value below is replaced. */
+/* Tubora tokens. Every hex here comes from IDENTITY.md (D16 candy). Components never carry hex. */
 :root {
-  --background: oklch(0.985 0.004 80);
-  --foreground: oklch(0.2 0.01 60);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.2 0.01 60);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.2 0.01 60);
-  --primary: oklch(0.45 0.12 40);
-  --primary-foreground: oklch(0.98 0.005 80);
-  --secondary: oklch(0.94 0.008 80);
-  --secondary-foreground: oklch(0.25 0.01 60);
-  --muted: oklch(0.94 0.008 80);
-  --muted-foreground: oklch(0.5 0.01 60);
-  --accent: oklch(0.92 0.02 60);
-  --accent-foreground: oklch(0.2 0.01 60);
-  --destructive: oklch(0.55 0.19 25);
-  --destructive-foreground: oklch(0.98 0 0);
-  --border: oklch(0.88 0.01 80);
-  --input: oklch(0.88 0.01 80);
-  --ring: oklch(0.45 0.12 40);
-  --radius: 0.375rem;
+  --background: #fde8e4;
+  --foreground: #2a1a1f;
+  --card: #fbd5cf;
+  --card-foreground: #2a1a1f;
+  --popover: #fde8e4;
+  --popover-foreground: #2a1a1f;
+  --primary: #d93a25;
+  --primary-foreground: #ffffff;
+  --secondary: #e2a400;
+  --secondary-foreground: #2a1a1f;
+  --muted: #f7c1ba;
+  --muted-foreground: #2a1a1f;
+  --accent: #f7c1ba;
+  --accent-foreground: #2a1a1f;
+  --destructive: #b3261e;
+  --destructive-foreground: #ffffff;
+  --ok: #1f7a3d;
+  --warn: #8a5a00;
+  --bad: #b3261e;
+  --deep: #f7c1ba;
+  --border: #2a1a1f;
+  --input: #2a1a1f;
+  --ring: #d93a25;
+  --radius: 1rem;
+  --sticker: 0 4px 0 #2a1a1f;
+  --sticker-lg: 0 6px 0 #2a1a1f;
 }
 
 @theme inline {
@@ -45,6 +47,10 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+  --color-bad: var(--bad);
+  --color-deep: var(--deep);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -52,9 +58,64 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  --shadow-sticker: var(--sticker);
+  --shadow-sticker-lg: var(--sticker-lg);
+  --font-display: var(--font-fredoka), "Fredoka", ui-rounded, "Arial Rounded MT Bold", system-ui, sans-serif;
+  --font-sans: var(--font-nunito), "Nunito", ui-rounded, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+html {
+  scroll-behavior: auto;
+}
+
+/* Lenis recommended base rules */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis.lenis-stopped {
+  overflow: hidden;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
+  font-family: var(--font-sans);
+}
+
+h1,
+h2 {
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
+}
+
+/* M3 scale entrance: scale(0.96) to 1 plus fade, ease-out, 380ms. Starts visible-safe:
+   the end state is the resting state, so JS-off HTML stays readable. */
+@keyframes tubora-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.tubora-enter {
+  animation: tubora-scale-in 380ms ease-out both;
+}
+.tubora-enter-late {
+  animation: tubora-scale-in 380ms ease-out 120ms both;
+}
+.tubora-enter-later {
+  animation: tubora-scale-in 380ms ease-out 240ms both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tubora-enter,
+  .tubora-enter-late,
+  .tubora-enter-later {
+    animation: none;
+  }
 }
