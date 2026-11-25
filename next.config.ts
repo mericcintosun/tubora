@@ -14,6 +14,9 @@ const brandFiles = fs.existsSync(brandDir)
   : [];
 
 const nextConfig: NextConfig = {
+  // Pins every /_next/static request to the deployment that rendered the HTML (?dpl=), so a page
+  // served during or after a redeploy never asks the new deployment for the old build's chunks.
+  deploymentId: process.env.VERCEL_DEPLOYMENT_ID || undefined,
   env: { NEXT_PUBLIC_BRAND_FILES: brandFiles.join(",") },
 };
 

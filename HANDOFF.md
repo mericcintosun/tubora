@@ -392,3 +392,9 @@ While tracing the 44% I also found a real planner defect behind it. The live pag
 
 ### QA: external findings
 None this round.
+
+### QA round 1, third crawl: stale HTML and chunk 404s
+
+The four-tube pages still showed the pre-`63608ec` sentence, the workspace still offered "Add Ivory Black" (fixed by the swap pass in `4b32a8c`), and `/pack/marmara-dusk-three-tubes` showed the new copy but its `/_next/static` chunks returned 404, so the heatmap frame stayed blank. Root cause: `/pack/[palette]` had no `generateStaticParams` and no dynamic API, so Next 15 cached each visited plan as ISR HTML, and the crawl received HTML from one build whose chunks lived in another. Fix: `export const dynamic = "force-dynamic"` on `app/pack/[palette]/page.tsx`, and `deploymentId` from `VERCEL_DEPLOYMENT_ID` in `next.config.ts` so chunk requests carry `?dpl=` and resolve against the deployment that rendered the page (this routing needs Skew Protection enabled in the Vercel project settings; the runner should confirm it is on).
+
+Copy: the result page and the workspace now lead with the share the tubes reach and, when the planner has one, the tube that closes the red areas. The red share itself is unchanged and still shown; it is the planner's real result.

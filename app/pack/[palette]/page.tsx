@@ -18,6 +18,11 @@ import { SEED } from "@/lib/seed";
 
 type Params = Promise<{ palette: string }>;
 
+// Render per request. Left to the default, Next caches this dynamic segment as ISR HTML, and
+// the live crawl got HTML from one build whose /_next/static chunks belonged to another (404s,
+// blank heatmap) plus copy from a build two commits old. The planner run is cheap (96x64 px).
+export const dynamic = "force-dynamic";
+
 /** One planner run per request, shared by generateMetadata and the page. */
 const loadPlan = cache((palette: string) => {
   const adapter = getAdapter();
@@ -69,7 +74,11 @@ export default async function PalettePage({ params }: { params: Params }) {
         <p className="mt-4 max-w-[65ch] text-lg leading-relaxed">
           {pct === 0
             ? `Every part of this picture is within reach. Average error ${plan.avgError.toFixed(1)}.`
-            : `These ${plan.selected.length} tubes mix ${100 - pct}% of the picture closely (average error ${plan.avgError.toFixed(1)}). The other ${pct}% is the part to plan around, marked in red below. What makes this scene hard: ${scene.challenge.charAt(0).toLowerCase()}${scene.challenge.slice(1)}`}
+            : `These ${plan.selected.length} tubes mix ${100 - pct}% of the picture closely (average error ${plan.avgError.toFixed(1)}). The red areas below (${pct}%) are where ${
+                suggested && plan.suggestion
+                  ? `one more tube helps: adding ${suggested.name} brings the average error to ${plan.suggestion.avgErrorAfter.toFixed(1)}.`
+                  : "you will want to test a swatch before committing the paint."
+              }`}
         </p>
         <p className="mt-3">
           <Badge variant={mixEngine === "spectral" ? "ok" : "secondary"} className="whitespace-normal text-left">
