@@ -240,6 +240,75 @@ None, the agent cannot run commands.
 ### Next best step
 Phase 4: the Adaption phrase run (verify the SDK calls, generate rows into `fixtures/phrases.sample.json`, `npm run seed`, real evaluation score) and the wow tuning from the `demo-step4` / `demo-path` numbers.
 
+## Phase 4 handover: Adaption wiring, palette card, mobile pass, security docs
+
+### Goal
+Wire DEMO step 5 end to end to Adaption (script writes the fixtures, the corpus prefers Adaption rows, the evaluation shows on screen), add the palette card as DEMO step 7, make 360/768/1280 px work, finish metadata and landing copy, and document a wallet-free codebase (Part B).
+
+### Status per slice
+- A1, Adaption integration: done, unverified at runtime. `scripts/adaption_invent.py` now uses `Adaption()`, `datasets.invent(dataset_prompt=..., training_type="instruction_dataset", estimate=True)`, the real `invent`, `wait_for_completion(dataset_id, timeout=3600)` with a `datasets.get` polling fallback, `get_evaluation`, `download(format="jsonl")` with a `get_export_links` fallback. It validates rows (lang, hex, hue, value, chroma), drops and counts the bad ones, and writes `fixtures/phrases.sample.json` (Adaption rows `a0001`... plus the 18 seed rows, sorted by id, 2-space JSON plus newline), `fixtures/adaption-evaluation.sample.json` (`status, quality, datasetId, rows, generatedAt`) and `data/painter-phrases.jsonl`. Without a key it touches nothing. `activePhrases()` in `lib/phrases.ts` is used by `PHRASES`, `keywordSearch` and `fakeAdapter.listPhrases()` (the real adapter delegates). `AdaptionEvaluation` gained optional `datasetId`, `rows`, `generatedAt`. The evaluation flows `app/pack/page.tsx` to `PackWorkspace` to `PhraseSearch` (`evaluation` prop) and is shown on `/how`. README `adaption` proof block, `tests/phrases.test.ts`, dataset card `datasets/tubora-painter-phrases/README.md`.
+- A2, bounty table and `DELIVERY.md`: done.
+- A3, palette card: done, unverified in a browser. `components/palette-card.tsx`, mounted next to `<ShareLink>` on `/pack/[palette]`. DEMO step 7 added.
+- A4, responsive: done by reading. `components/mobile-nav.tsx`, `sm` buttons `h-11 px-4 text-sm`, slider `h-11` with drawn track and thumb, card grids `grid-cols-1` below md, recipe text `truncate`/`break-words` with `title`.
+- A5, metadata and landing copy: done.
+- B1, web hygiene: clean; the only changes were the footer section and the jsDelivr/Hugging Face line in the phrase box.
+- B2, `SECURITY.md`: done.
+- Build, tests, proof: not run by the agent.
+
+### Depth statement (Adaption)
+Deleting `scripts/adaption_invent.py` leaves nothing that can produce the `adaption-invent` rows and the evaluation. Deleting those rows from `fixtures/phrases.sample.json` turns the DEMO step 5 output back to the seed badge and removes the evaluation line on `/pack` and `/how`. Today the fixture holds only seed rows, so step 5 shows the seed badge.
+
+Seat check: one model provider (Transformers.js in the browser, `components/phrase-search.tsx`); Adaption is the data seat. No second occupant.
+
+### Decisions
+- **Palette card import fence.** The spec's step 2 says "reuse a helper from `components/heatmap-canvas.tsx`; export one there if needed", and the gate says the card imports only `lib/*` and `components/ui/*`. These conflict. I followed step 2: `heatmap-canvas.tsx` now exports `heatmapRgba` (the red wash, also used by `HeatmapCanvas` itself) and `planHeatmap` (renderScene, analyze with CLUSTERS, planPalette, planErrors). The card imports those two, so no wash logic is copied. The card does not import `lib/planner` directly. Gate item marked unmet in the summary for that reason.
+- The card's red comes from `BAD` in `lib/tokens.ts` (passed into `heatmapRgba`), not the CSS variable, per "colors only from lib/tokens.ts". Fonts come from `--font-fredoka` / `--font-nunito` via `getComputedStyle`, after `document.fonts.ready`.
+- Below `sm` the header CTA button hides and "Pack my tubes" lives in the mobile menu, so brand, CTA and menu button never crowd 360 px. From `sm` to `md` the CTA and the menu button show; from `md` up the two desktop links show.
+- The mobile panel is `hidden` when closed (not unmounted), positioned against the sticky header, solid `bg-background`, no blur.
+- `/how` row count is by source of the active corpus (Adaption rows or seed rows, never both), because the adapter serves only the active set.
+- `.env.example` and `.farm-live.json` unchanged: the Vercel app never reads `ADAPTION_API_KEY`.
+- Bounty table placed under "How it uses the sponsor tech", before the Adaption paragraph.
+
+### Part B notes
+- Contract front skipped: no `contracts/` directory, not a web3 stack.
+- Wallet front verified vacuously. Greps over `app/ components/ lib/ scripts/` for `eth_requestAccounts`, `connect(`, `eth_sign`, `personal_sign`: no match for any. No Blockaid warning is expected because the site requests no wallet access.
+- Secrets grep (`sk-`, `pt_live_`, `PRIVATE_KEY`, 64-hex, base64 runs over 40 chars) over `app/ components/ lib/`: the only hits are the `dusk-` substring in the `marmara-dusk-four-tubes` slug (false positive). No keys.
+- `http://` in app code: only the SVG `xmlns="http://www.w3.org/2000/svg"` namespace in `app/icon.svg` (never-touch, not a fetch).
+- `target="_blank"`: one, the footer source link, with `rel="noopener noreferrer"`.
+- `/api/*`: all five routes export only `GET`. `/api/mix` and `/api/plans/[palette]` validate with zod schemas from `lib/schemas.ts`; the other three take no input.
+- `process.env` reads: `ADAPTER_MODE` (`lib/config.ts`), `NEXT_PUBLIC_BRAND_FILES` (`lib/brand-files.ts`, `next.config.ts`), and `ADAPTION_API_KEY` (Python `os.environ`, script only). All three are in `.env.example`.
+
+### Failed attempts
+None.
+
+### Files changed
+`scripts/adaption_invent.py`, `lib/phrases.ts`, `lib/adapter.ts`, `lib/adapter.real.ts`, `lib/types.ts`, `components/phrase-search.tsx`, `components/pack-workspace.tsx`, `app/pack/page.tsx`, `app/how/page.tsx`, `scripts/proof.ts`, `tests/phrases.test.ts` (new), `datasets/tubora-painter-phrases/README.md` (new), `README.md`, `DELIVERY.md` (new), `components/palette-card.tsx` (new), `components/heatmap-canvas.tsx`, `app/pack/[palette]/page.tsx`, `DEMO.md`, `components/mobile-nav.tsx` (new), `components/site-header.tsx`, `components/ui/button.tsx`, `components/ui/slider.tsx`, `app/layout.tsx`, `app/page.tsx`, `SECURITY.md` (new), `HANDOFF.md`, `IDENTITY.md` (Amendments only), `.farm-commits.json`.
+
+### Commands run
+None, the agent cannot run commands.
+
+### Risks for the runner
+- `heatmapRgba` returns a `Uint8ClampedArray` passed to `new ImageData(...)`. With TypeScript 5.7+ DOM typings this needs a `Uint8ClampedArray<ArrayBuffer>`, which `new Uint8ClampedArray(n)` infers. If the build reports a type mismatch there, annotate the return type as `Uint8ClampedArray<ArrayBuffer>`.
+- The slider thumb offset (`-mt-1.5` on the webkit thumb) is set by arithmetic, not by eye. Check it at 360 px.
+- `npm run proof` now also writes the README `adaption` block; it reads the two fixtures only.
+
+### Open questions
+- Discord: does the Adaption AI Application Award need an opt-in, or does it have its own criteria? (`DELIVERY.md` `action:` line waits on this.)
+- Discord: eligibility conflict (Devpost "students only, 13+" vs overview "all ages").
+- Ask first: the Web Worker plus a `primeMixTable` export in `lib/planner.ts`. Still not approved, still not built.
+- Adaption SDK: every kwarg and response field not checked against the docs carries `# UNVERIFIED` in the script (the estimate fields `estimated_credits` / `available_credits`, the job id field, `download` return shape, `get_export_links` shape, the instruction wrapper fields).
+
+### Manual checklist (builder)
+1. Read the three Adaption docs pages and fix any `# UNVERIFIED` line in `scripts/adaption_invent.py`.
+2. `pip install adaption`, then `ADAPTION_API_KEY=... python scripts/adaption_invent.py`, then `npm run seed` and `npm run proof`.
+3. Publish `data/painter-phrases.jsonl` with `datasets/tubora-painter-phrases/README.md` on Hugging Face.
+4. If no key or credits arrive: keep the seed rows, remove the Adaption row from the README bounty table and the Adaption claim from the Devpost text.
+5. Ask the two Discord questions above.
+6. Walk DEMO steps 1 to 7 in a private window; open the step 7 PNG and check it reads at A6.
+
+### Next best step
+Phase 5: kit signatures 2 (parallax on `/`) and 3 (sticky horizontal chapters) with `lenis` ^1.3.27 and `motion` ^14.14.0, respecting reduced motion and keeping `components/scroll-provider.tsx` signature 1 working.
+
 ## 5. Definition of done
 
 - Deployed on Vercel at https://tubora.vercel.app, README demo link live, repo public.
