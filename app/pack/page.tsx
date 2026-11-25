@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PackWorkspace } from "@/components/pack-workspace";
-import { Card } from "@/components/ui/card";
+import { RouteEmptyState } from "@/components/route-states";
 import { getAdapter } from "@/lib/adapter";
 import { SEED } from "@/lib/seed";
 
@@ -9,6 +9,19 @@ export const metadata: Metadata = {
   title: "Pack your tubes",
   description: "Pick the reference, tick the paints you own, slide the tube count and watch what goes out of reach.",
 };
+
+/** Empty branch of the saved palettes list. */
+function SavedPlansEmptyState() {
+  return (
+    <RouteEmptyState
+      className="mt-4"
+      title="No shared palettes yet"
+      body="Pack one above and copy its link. It will open as its own page for anyone you send it to."
+      ctaHref="/pack?scene=marmara-dusk&k=4"
+      ctaLabel="Pack the sunset with 4 tubes"
+    />
+  );
+}
 
 export default async function PackPage({ searchParams }: { searchParams: Promise<{ scene?: string; k?: string }> }) {
   const sp = await searchParams;
@@ -26,7 +39,7 @@ export default async function PackPage({ searchParams }: { searchParams: Promise
       <div className="tubora-enter mb-8 max-w-3xl">
         <h1 className="font-display text-4xl font-semibold leading-tight sm:text-5xl">Which tubes go in the bag?</h1>
         <p className="mt-3 max-w-[65ch] text-base leading-relaxed">
-          The sunset is loaded with a 12-tube student set. Drag the slider down from 4 to 3 and watch the sky turn red: that
+          The sunset is loaded with a 12-tube student set. Drag the slider down from 4 to 3 and watch the red spread: that
           is the part of the picture those tubes cannot mix.
         </p>
       </div>
@@ -36,9 +49,7 @@ export default async function PackPage({ searchParams }: { searchParams: Promise
       <section className="mt-16" aria-labelledby="saved-title">
         <h2 id="saved-title" className="font-display text-2xl font-semibold">Palettes other painters packed</h2>
         {savedPlans.length === 0 ? (
-          <Card className="mt-4 p-5">
-            <p className="font-bold">No shared palettes yet. Pack one and copy its link.</p>
-          </Card>
+          <SavedPlansEmptyState />
         ) : (
           <ul className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {savedPlans.map((p, i) => (

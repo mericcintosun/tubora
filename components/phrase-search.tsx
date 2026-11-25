@@ -80,6 +80,18 @@ function rows(out: { data: ArrayLike<number>; dims: number[] }): Float32Array[] 
   return Array.from({ length: n }, (_, i) => Float32Array.from(Array.prototype.slice.call(out.data, i * dim, (i + 1) * dim)));
 }
 
+/** Empty branch of the phrase box: the keyword fallback found nothing. One tap fills a word that does match. */
+function PhraseEmptyState({ onTry }: { onTry: (word: string) => void }) {
+  return (
+    <div role="status" className="tubora-enter mt-4 rounded-2xl border-2 border-border bg-background p-4">
+      <p className="text-sm font-bold">No phrase shares a word with that yet. Try “fog”, “snow” or “sunset”.</p>
+      <Button type="button" size="sm" variant="outline" className="mt-3" onClick={() => onTry("sunset")}>
+        Use “sunset”
+      </Button>
+    </div>
+  );
+}
+
 interface Hit {
   phrase: PainterPhrase;
   score: number;
@@ -167,7 +179,7 @@ export function PhraseSearch({ tubeIdx, mixEngine = "km-rgb" }: { tubeIdx: numbe
         </div>
       )}
 
-      {empty && <p className="mt-4 text-sm font-bold">No phrase shares a word with that yet. Try “fog”, “snow” or “sunset”.</p>}
+      {empty && <PhraseEmptyState onTry={(word) => setQuery(word)} />}
 
       {hit && (
         <div className="tubora-enter mt-4 flex flex-wrap items-center gap-4 rounded-2xl border-2 border-border bg-background p-4">
